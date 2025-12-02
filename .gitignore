@@ -43,6 +43,13 @@ ENV/
 coverage/
 .nyc_output/
 
+# 个人文档和笔记（敏感信息）
+上一次.txt
+上次记录.txt
+CLAUDE.md
+AGENTS.md
+*.local.md
+
 # Cesium 库管理
 # 注：Cesium-1.136-epawse 是定制版本，需要上传
 # 只排除官方的 1.82 版本
