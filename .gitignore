@@ -1,3 +1,7 @@
+# ========================================
+# Git 忽略规则 - 通用（所有开发者必须）
+# ========================================
+
 # 依赖目录
 node_modules/
 dist/
@@ -6,23 +10,17 @@ dist/
 *.log
 npm-debug.log*
 
-# 编辑器配置
-.vscode/
-.idea/
-*.swp
-*.swo
-
 # 系统文件
 .DS_Store
 Thumbs.db
 
-# 环境变量（敏感信息）
+# 敏感信息（必须忽略，每个开发者有自己的值）
 .env
 .env.local
 .env.*.local
 backend/.env
 
-# Python
+# Python 
 __pycache__/
 *.py[cod]
 *$py.class
@@ -40,15 +38,14 @@ ENV/
 # 临时文件
 *.tmp
 *.temp
-上次记录.txt
-上一次.txt
 
 # 测试覆盖率
 coverage/
 .nyc_output/
 
-# 大型静态资源（Cesium 库太大，建议单独管理或使用 CDN）
-public/Cesium-1.136/
+# Cesium 库管理
+# 注：Cesium-1.136-epawse 是定制版本，需要上传
+# 只排除官方的 1.82 版本
 public/Cesium-1.82-epawse/
 
 # 数据文件（真实项目数据）
@@ -68,6 +65,33 @@ backend/app/utils/scanner.py
 # AI 助手配置和开发过程文档
 .claude/
 .gemini/
+
+# ========================================
+# 可选忽略规则（根据个人工具调整）
+# ========================================
+
+# IDE 配置（如果希望共享编辑器配置，可删除此项）
+# .vscode/
+# .idea/
+
+# 编辑器临时文件（可选）
+# *.swp
+# *.swo
+# *~
+
+# 个人开发记录（可选，如果想保留项目进度文件，删除下行）
+# 上次记录.txt
+# 上一次.txt
+
+# ========================================
+# 扩展建议
+# ========================================
+# 如果您有其他不想提交的文件：
+# 1. 在本地修改此文件
+# 2. 运行: git update-index --assume-unchanged <file> 
+# 3. 记得在项目 wiki 或文档中说明这些本地忽略
+#
+# 本地忽略不会被提交到 git，其他开发者的设置完全独立
 CLAUDE.md
 AGENTS.md
 openspec/
