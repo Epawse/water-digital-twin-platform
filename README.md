@@ -63,17 +63,21 @@ water-digital-new/
 
 ## 🛠️ 快速开始
 
+> 📖 **详细配置指南请查看 [DEVELOPMENT.md](DEVELOPMENT.md)**
+
 ### 前端
 
 ```bash
 # 安装依赖
 npm install
 
+# 创建 .env.local 文件配置天地图 Key
+cat > .env.local << EOF
+VITE_TIANDITU_KEY=YOUR_TIANDITU_KEY
+EOF
+
 # 启动开发服务器
 npm run dev
-
-# 构建生产版本
-npm run build
 ```
 
 ### 后端
@@ -81,12 +85,16 @@ npm run build
 ```bash
 cd backend
 
+# 创建虚拟环境
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
 # 安装依赖
 pip install -r requirements.txt
 
-# 配置环境变量
+# 配置 .env 文件（数据库连接等）
 cp .env.example .env
-# 编辑 .env 文件，填写数据库连接信息
+# 编辑 .env 文件，填写数据库信息
 
 # 初始化数据库
 alembic upgrade head
@@ -97,22 +105,23 @@ uvicorn app.main:app --reload --port 8000
 
 ## ⚙️ 环境变量配置
 
+### 前端 (.env.local)
+```env
+# 天地图 Key 申请地址: https://console.tianditu.gov.cn/
+VITE_TIANDITU_KEY=YOUR_TIANDITU_KEY
+```
+
 ### 后端 (.env)
 ```env
-DATABASE_URL=postgresql+asyncpg://用户名:密码@localhost:5432/数据库名
-DATABASE_URL_SYNC=postgresql+psycopg2://用户名:密码@localhost:5432/数据库名
+# PostgreSQL 15 + PostGIS 连接配置
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/dbname
+DATABASE_URL_SYNC=postgresql+psycopg2://user:password@localhost:5432/dbname
 API_PREFIX=/api
 DEBUG=true
+ENABLE_SEED_DATA=true  # 开发环境可设为 true
 ```
 
-### 前端地图服务
-需要在 `src/mock/baseMapData.ts` 中配置天地图 API Key：
-```typescript
-// 将 YOUR_TIANDITU_KEY 替换为你的天地图开发者 Key
-tk=YOUR_TIANDITU_KEY
-```
-
-> 💡 天地图开发者 Key 可在 [天地图开发者平台](https://console.tianditu.gov.cn/) 免费申请
+> 💡 更多配置细节和问题排查，请参考 [DEVELOPMENT.md](DEVELOPMENT.md)
 
 ## ✨ 主要功能
 
