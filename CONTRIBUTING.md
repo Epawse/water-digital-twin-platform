@@ -31,7 +31,7 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-访问 `http://localhost:5174`
+访问 `http://localhost:5173`
 
 ## 代码规范
 

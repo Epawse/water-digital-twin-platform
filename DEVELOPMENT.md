@@ -24,7 +24,7 @@ VITE_TIANDITU_KEY=YOUR_TIANDITU_KEY
 
 ```bash
 npm run dev
-# http://localhost:5174
+# http://localhost:5173
 ```
 
 ### Cesium 定制库

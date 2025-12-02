@@ -72,6 +72,7 @@ npm install
 cp .env.example .env.local
 # 编辑 .env.local，填写天地图 Key
 npm run dev
+# http://localhost:5173
 ```
 
 ### 后端
