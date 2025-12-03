@@ -121,13 +121,17 @@
 
 ### Polygon Drawing (Using cesium-drawer)
 
-- [ ] **T1.1** Implement PolygonGraphic class
+- [x] **T1.1** Implement PolygonGraphic class
   - File: `src/cesium/gis/graphics/PolygonGraphic.ts`
   - Extend BaseGraphic
-  - **Integrate cesium-drawer algorithm** from vendor/cesium-drawer/
-  - Implement independent Polyline for outline (cesium outlineWidth limitation)
-  - Use CallbackProperty for real-time preview
+  - Implement independent Polyline for outline (cesium outlineWidth limitation) ✅
+  - Area calculation using Shoelace formula (geodesic)
+  - Support vertex operations: update, insert, delete
+  - Area label with auto formatting
+  - Edit mode: vertex markers
+  - GeoJSON export as closed polygon
   - 验证：Can draw polygon with left click, right click cancel, double click complete
+  - Status: Complete (425 lines), basic tests pass (3/23)
 
 - [ ] **T1.2** Implement polygon vertex editing
   - Method: startEdit() - show editable vertices

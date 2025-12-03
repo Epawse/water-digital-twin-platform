@@ -14,5 +14,5 @@ export type { CircleGraphicOptions } from './CircleGraphic'
 export { RectangleGraphic } from './RectangleGraphic'
 export type { RectangleGraphicOptions } from './RectangleGraphic'
 
-// TODO: Phase 1 后续任务
-// export { PolygonGraphic } from './PolygonGraphic'
+export { PolygonGraphic } from './PolygonGraphic'
+export type { PolygonGraphicOptions } from './PolygonGraphic'
