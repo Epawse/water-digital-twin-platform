@@ -125,12 +125,9 @@
   - File: `src/cesium/gis/graphics/PolygonGraphic.ts`
   - Extend BaseGraphic
   - **Integrate cesium-drawer algorithm** from vendor/cesium-drawer/
-  - Support two modes: 'free' (custom polygon) and 'rectangle' (4-vertex auto-complete)
-  - Rectangle mode: 2 clicks define opposite corners, auto-generates 4 vertices
   - Implement independent Polyline for outline (cesium outlineWidth limitation)
   - Use CallbackProperty for real-time preview
   - 验证：Can draw polygon with left click, right click cancel, double click complete
-  - 验证：Rectangle mode creates perfect rectangles with 2 clicks
 
 - [ ] **T1.2** Implement polygon vertex editing
   - Method: startEdit() - show editable vertices
@@ -160,7 +157,7 @@
   - 验证：Continuous clicks draw polyline
   - Status: Complete (392 lines), 14/14 tests pass
 
-### Circle
+### Circle & Rectangle
 
 - [x] **T1.5** Implement CircleGraphic class
   - File: `src/cesium/gis/graphics/CircleGraphic.ts`
@@ -172,6 +169,18 @@
   - GeoJSON export with polygon approximation
   - 验证：Two clicks create circle
   - Status: Complete (409 lines), basic tests pass, mock improvements needed
+
+- [x] **T1.6** Implement RectangleGraphic class
+  - File: `src/cesium/gis/graphics/RectangleGraphic.ts`
+  - Extend BaseGraphic
+  - Use Cesium.RectangleGraphics (performance optimized)
+  - Two clicks: opposite corners
+  - Display dimensions (width × height) and area labels
+  - Geodesic dimension calculation
+  - Edit mode: 4 corner markers
+  - GeoJSON export as closed polygon
+  - 验证：Two clicks create rectangle
+  - Status: Complete (426 lines), basic tests pass (3/16)
 
 ### Drawing Tools
 
