@@ -78,10 +78,11 @@ function activateTool(toolType: DrawToolType) {
         // Register feature and graphic to GISStore
         gisStore.addFeature(feature, graphic)
 
-        // If not in continuous mode, deactivate tool
-        if (!gisStore.continuousMode) {
-          gisStore.deactivateTool()
-        }
+        // For MVP: Keep tool active for easier use (user can click away to deactivate)
+        // Future: Add toggle for continuous mode in UI
+        // if (!gisStore.continuousMode) {
+        //   gisStore.deactivateTool()
+        // }
       },
       onCancel: () => {
         // User cancelled drawing
