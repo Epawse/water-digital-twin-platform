@@ -94,7 +94,7 @@
                 v-for="feature in group.features"
                 :key="feature.id"
                 class="feature-item"
-                :class="{ selected: gisStore.selectedFeatures.has(feature.id) }"
+                :class="{ selected: gisStore.selectedFeatureIds.has(feature.id) }"
               >
                 <div class="feature-info" @click="selectFeature(feature.id)">
                   <span class="feature-name">{{ feature.name }}</span>

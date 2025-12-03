@@ -153,25 +153,35 @@ function createGraphicFromFeature(feature: Feature, viewer: any) {
           console.error('Circle missing radius property:', feature)
           return null
         }
+        // CircleGraphic.create() expects [center, edgePoint]
+        // Calculate edge point from center + radius
+        const centerPos = positions[0]
+        const centerCarto = Cesium.Cartographic.fromCartesian(centerPos)
+        const edgePos = Cesium.Cartesian3.fromRadians(
+          centerCarto.longitude + properties.radius / 6378137, // approximate
+          centerCarto.latitude,
+          centerCarto.height
+        )
+        positions = [centerPos, edgePos]
+
         graphic = new CircleGraphic(viewer, {
           name,
-          style,
-          radius: properties.radius
+          style
         })
         break
       case 'rectangle':
-        // Rectangle needs bounds
-        if (!properties?.west || !properties?.east || !properties?.south || !properties?.north) {
-          console.error('Rectangle missing bounds properties:', feature)
+        // Rectangle is stored as Polygon with 5 positions (4 corners + closing point)
+        // RectangleGraphic.create() expects [corner1, corner2] (opposite corners)
+        if (positions.length < 4) {
+          console.error('Rectangle needs at least 4 corner positions:', positions.length)
           return null
         }
+        // Use corner 0 (SW) and corner 2 (NE) as opposite corners
+        positions = [positions[0], positions[2]]
+
         graphic = new RectangleGraphic(viewer, {
           name,
-          style,
-          west: properties.west,
-          east: properties.east,
-          south: properties.south,
-          north: properties.north
+          style
         })
         break
       case 'polygon':
