@@ -99,9 +99,8 @@ export class PolygonGraphic extends BaseGraphic {
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(this.positions),
         material: this.getMaterial(),
-        height: 0, // Required when using heightReference
-        heightReference: this.heightReference,
-        // 不使用 Cesium 自带的 outline（宽度限制且贴地模式不支持）
+        classificationType: Cesium.ClassificationType.TERRAIN, // Classify on terrain to avoid Z-fighting
+        // 不使用 Cesium 自带的 outline（classificationType 模式不支持）
         outline: false
       }
     })
@@ -124,7 +123,7 @@ export class PolygonGraphic extends BaseGraphic {
         positions: outlinePositions,
         width: this.style.strokeWidth || 2,
         material: Cesium.Color.fromCssColorString(this.style.strokeColor || '#ffcc33'),
-        clampToGround: this.heightReference === Cesium.HeightReference.CLAMP_TO_GROUND
+        clampToGround: true // Always clamp outline to ground for terrain-classified polygons
       }
     })
 

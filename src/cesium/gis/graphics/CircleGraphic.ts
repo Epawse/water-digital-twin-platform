@@ -116,9 +116,8 @@ export class CircleGraphic extends BaseGraphic {
         semiMinorAxis: this.radius,
         semiMajorAxis: this.radius,
         material: this.getMaterial(),
-        height: 0, // Required when using heightReference
-        heightReference: this.heightReference,
-        // Note: outline is disabled in terrain clamp mode (Cesium limitation)
+        classificationType: Cesium.ClassificationType.TERRAIN, // Classify on terrain to avoid Z-fighting
+        // Note: outline is disabled when using classificationType
         outline: false
       }
     })

@@ -126,9 +126,8 @@ export class RectangleGraphic extends BaseGraphic {
       rectangle: {
         coordinates: this.rectangleBounds,
         material: this.getMaterial(),
-        height: 0, // Required when using heightReference
-        heightReference: this.heightReference,
-        // Note: outline is disabled in terrain clamp mode (Cesium limitation)
+        classificationType: Cesium.ClassificationType.TERRAIN, // Classify on terrain to avoid Z-fighting
+        // Note: outline is disabled when using classificationType
         outline: false
       }
     })

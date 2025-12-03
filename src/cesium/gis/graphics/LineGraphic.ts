@@ -112,7 +112,7 @@ export class LineGraphic extends BaseGraphic {
         positions,
         width: style.strokeWidth,
         material,
-        clampToGround: false,
+        clampToGround: true, // Enable terrain clamping
         show: this.visible
       }
     })
