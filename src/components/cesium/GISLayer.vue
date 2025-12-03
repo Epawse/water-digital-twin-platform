@@ -121,88 +121,141 @@ function deactivateTool() {
  * Create Graphic instance from Feature
  */
 function createGraphicFromFeature(feature: Feature, viewer: any) {
-  const { geometry, style, name } = feature
+  const { geometry, style, name, properties } = feature
 
   // Convert coordinates to Cartesian3
   const positions = convertCoordinatesToCartesian3(geometry)
   if (!positions || positions.length === 0) {
-    console.error('Invalid geometry coordinates:', geometry)
+    console.error('Failed to convert geometry coordinates:', geometry)
     return null
   }
 
   // Create appropriate Graphic based on type
   let graphic
-  switch (feature.type) {
-    case 'point':
-      graphic = new PointGraphic(viewer, {
-        name,
-        style,
-        label: name
-      })
-      break
-    case 'line':
-      graphic = new LineGraphic(viewer, {
-        name,
-        style
-      })
-      break
-    case 'circle':
-      graphic = new CircleGraphic(viewer, {
-        name,
-        style
-      })
-      break
-    case 'rectangle':
-      graphic = new RectangleGraphic(viewer, {
-        name,
-        style
-      })
-      break
-    case 'polygon':
-      graphic = new PolygonGraphic(viewer, {
-        name,
-        style
-      })
-      break
-    default:
-      console.error('Unknown feature type:', feature.type)
-      return null
-  }
+  try {
+    switch (feature.type) {
+      case 'point':
+        graphic = new PointGraphic(viewer, {
+          name,
+          style,
+          label: name
+        })
+        break
+      case 'line':
+        graphic = new LineGraphic(viewer, {
+          name,
+          style
+        })
+        break
+      case 'circle':
+        // Circle needs center and radius
+        if (!properties?.radius) {
+          console.error('Circle missing radius property:', feature)
+          return null
+        }
+        graphic = new CircleGraphic(viewer, {
+          name,
+          style,
+          radius: properties.radius
+        })
+        break
+      case 'rectangle':
+        // Rectangle needs bounds
+        if (!properties?.west || !properties?.east || !properties?.south || !properties?.north) {
+          console.error('Rectangle missing bounds properties:', feature)
+          return null
+        }
+        graphic = new RectangleGraphic(viewer, {
+          name,
+          style,
+          west: properties.west,
+          east: properties.east,
+          south: properties.south,
+          north: properties.north
+        })
+        break
+      case 'polygon':
+        graphic = new PolygonGraphic(viewer, {
+          name,
+          style
+        })
+        break
+      default:
+        console.error('Unknown feature type:', feature.type)
+        return null
+    }
 
-  // Create the graphic with positions
-  graphic.create(positions)
-  return graphic
+    // Create the graphic with positions
+    graphic.create(positions)
+    console.log(`Created ${feature.type} graphic:`, feature.id, positions.length, 'positions')
+    return graphic
+  } catch (error) {
+    console.error(`Error creating ${feature.type} graphic:`, error, feature)
+    return null
+  }
 }
 
 /**
  * Convert Feature geometry coordinates to Cesium.Cartesian3 array
  */
 function convertCoordinatesToCartesian3(geometry: any): any[] {
-  if (!geometry || !geometry.coordinates) return []
+  if (!geometry || !geometry.coordinates) {
+    console.error('Invalid geometry:', geometry)
+    return []
+  }
 
   const coords = geometry.coordinates
 
-  switch (geometry.type) {
-    case 'Point':
-      // Single coordinate [lon, lat, height?]
-      return [Cesium.Cartesian3.fromDegrees(coords[0], coords[1], coords[2] || 0)]
+  try {
+    switch (geometry.type) {
+      case 'Point':
+        // Single coordinate [lon, lat, height?]
+        if (!Array.isArray(coords) || coords.length < 2) {
+          console.error('Invalid Point coordinates:', coords)
+          return []
+        }
+        return [Cesium.Cartesian3.fromDegrees(coords[0], coords[1], coords[2] || 0)]
 
-    case 'LineString':
-      // Array of coordinates [[lon, lat, height?], ...]
-      return coords.map((c: number[]) =>
-        Cesium.Cartesian3.fromDegrees(c[0], c[1], c[2] || 0)
-      )
+      case 'LineString':
+        // Array of coordinates [[lon, lat, height?], ...]
+        if (!Array.isArray(coords)) {
+          console.error('Invalid LineString coordinates:', coords)
+          return []
+        }
+        return coords.map((c: number[]) => {
+          if (!Array.isArray(c) || c.length < 2) {
+            console.warn('Invalid coordinate in LineString:', c)
+            return null
+          }
+          return Cesium.Cartesian3.fromDegrees(c[0], c[1], c[2] || 0)
+        }).filter((p: any) => p !== null)
 
-    case 'Polygon':
-      // Array of rings, use first ring (exterior)
-      const ring = coords[0] || coords
-      return ring.map((c: number[]) =>
-        Cesium.Cartesian3.fromDegrees(c[0], c[1], c[2] || 0)
-      )
+      case 'Polygon':
+        // Array of rings, use first ring (exterior)
+        if (!Array.isArray(coords) || coords.length === 0) {
+          console.error('Invalid Polygon coordinates:', coords)
+          return []
+        }
+        const ring = coords[0]
+        if (!Array.isArray(ring)) {
+          console.error('Invalid Polygon ring:', ring)
+          return []
+        }
+        return ring.map((c: number[]) => {
+          if (!Array.isArray(c) || c.length < 2) {
+            console.warn('Invalid coordinate in Polygon:', c)
+            return null
+          }
+          return Cesium.Cartesian3.fromDegrees(c[0], c[1], c[2] || 0)
+        }).filter((p: any) => p !== null)
 
-    default:
-      console.warn('Unsupported geometry type:', geometry.type)
-      return []
+      default:
+        console.warn('Unsupported geometry type:', geometry.type)
+        return []
+    }
+  } catch (error) {
+    console.error('Error converting coordinates:', error, geometry)
+    return []
   }
 }
 

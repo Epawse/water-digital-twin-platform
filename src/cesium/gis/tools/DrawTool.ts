@@ -224,7 +224,7 @@ export class DrawTool extends BaseTool {
       name: '点标注',
       geometry: {
         type: 'Point',
-        coordinates: coord
+        coordinates: [coord.longitude, coord.latitude, coord.height || 0] // GeoJSON array format
       },
       style: {
         fillColor: this.style.pointColor,
@@ -294,7 +294,7 @@ export class DrawTool extends BaseTool {
       name: '线绘制',
       geometry: {
         type: 'LineString',
-        coordinates: this.vertices
+        coordinates: this.vertices.map(v => [v.longitude, v.latitude, v.height || 0]) // GeoJSON array format
       },
       style: {
         strokeColor: this.style.strokeColor,
@@ -314,13 +314,16 @@ export class DrawTool extends BaseTool {
   private completePolygonDrawing(): void {
     if (this.vertices.length < 3) return
 
+    // GeoJSON Polygon: array of rings, first ring is exterior
+    const ring = this.vertices.map(v => [v.longitude, v.latitude, v.height || 0])
+
     const feature: Feature = {
       id: this.generateId(),
       type: 'polygon',
       name: '多边形',
       geometry: {
         type: 'Polygon',
-        coordinates: this.vertices
+        coordinates: [ring] // GeoJSON requires array of rings
       },
       style: {
         fillColor: this.style.fillColor,
@@ -340,16 +343,93 @@ export class DrawTool extends BaseTool {
    * 完成圆形绘制
    */
   private completeCircleDrawing(): void {
-    // TODO: 实现圆形完成逻辑
-    console.log('Circle drawing completed - to be implemented')
+    if (this.vertices.length < 1 || !this.drawCursorPosition) return
+
+    const center = this.vertices[0]
+    const cursorCoord = this.cartesianToCoordinate(this.drawCursorPosition)
+
+    // Calculate radius using geodesic distance
+    const centerCartesian = Cesium.Cartesian3.fromDegrees(
+      center.longitude,
+      center.latitude,
+      center.height || 0
+    )
+    const radius = Cesium.Cartesian3.distance(centerCartesian, this.drawCursorPosition)
+
+    const feature: Feature = {
+      id: this.generateId(),
+      type: 'circle',
+      name: '圆形',
+      geometry: {
+        type: 'Point', // Circle is represented as center point
+        coordinates: [center.longitude, center.latitude, center.height || 0]
+      },
+      style: {
+        fillColor: this.style.fillColor,
+        fillOpacity: this.style.fillOpacity,
+        strokeColor: this.style.strokeColor,
+        strokeWidth: this.style.strokeWidth
+      },
+      properties: {
+        radius: radius,
+        area: Math.PI * radius * radius
+      },
+      visible: true,
+      createdAt: new Date()
+    }
+
+    this.complete(feature)
   }
 
   /**
    * 完成矩形绘制
    */
   private completeRectangleDrawing(): void {
-    // TODO: 实现矩形完成逻辑
-    console.log('Rectangle drawing completed - to be implemented')
+    if (this.vertices.length < 1 || !this.drawCursorPosition) return
+
+    const corner1 = this.vertices[0]
+    const corner2 = this.cartesianToCoordinate(this.drawCursorPosition)
+
+    // GeoJSON Polygon: rectangle as closed ring
+    const west = Math.min(corner1.longitude, corner2.longitude)
+    const east = Math.max(corner1.longitude, corner2.longitude)
+    const south = Math.min(corner1.latitude, corner2.latitude)
+    const north = Math.max(corner1.latitude, corner2.latitude)
+    const height = corner1.height || 0
+
+    const ring = [
+      [west, south, height],
+      [east, south, height],
+      [east, north, height],
+      [west, north, height],
+      [west, south, height] // close the ring
+    ]
+
+    const feature: Feature = {
+      id: this.generateId(),
+      type: 'rectangle',
+      name: '矩形',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [ring]
+      },
+      style: {
+        fillColor: this.style.fillColor,
+        fillOpacity: this.style.fillOpacity,
+        strokeColor: this.style.strokeColor,
+        strokeWidth: this.style.strokeWidth
+      },
+      properties: {
+        west,
+        east,
+        south,
+        north
+      },
+      visible: true,
+      createdAt: new Date()
+    }
+
+    this.complete(feature)
   }
 
   /**
