@@ -125,9 +125,12 @@
   - File: `src/cesium/gis/graphics/PolygonGraphic.ts`
   - Extend BaseGraphic
   - **Integrate cesium-drawer algorithm** from vendor/cesium-drawer/
+  - Support two modes: 'free' (custom polygon) and 'rectangle' (4-vertex auto-complete)
+  - Rectangle mode: 2 clicks define opposite corners, auto-generates 4 vertices
   - Implement independent Polyline for outline (cesium outlineWidth limitation)
   - Use CallbackProperty for real-time preview
   - 验证：Can draw polygon with left click, right click cancel, double click complete
+  - 验证：Rectangle mode creates perfect rectangles with 2 clicks
 
 - [ ] **T1.2** Implement polygon vertex editing
   - Method: startEdit() - show editable vertices
@@ -157,30 +160,25 @@
   - 验证：Continuous clicks draw polyline
   - Status: Complete (392 lines), 14/14 tests pass
 
-### Circle & Rectangle
+### Circle
 
-- [ ] **T1.5** Implement CircleGraphic class
+- [x] **T1.5** Implement CircleGraphic class
   - File: `src/cesium/gis/graphics/CircleGraphic.ts`
   - Extend BaseGraphic
   - Use Cesium.EllipseGraphics
   - Dynamic radius on mouse move
   - Display radius and area labels
+  - Support edit mode (center + edge markers)
+  - GeoJSON export with polygon approximation
   - 验证：Two clicks create circle
-
-- [ ] **T1.6** Implement RectangleGraphic class
-  - File: `src/cesium/gis/graphics/RectangleGraphic.ts`
-  - Extend BaseGraphic
-  - Use Cesium.RectangleGraphics
-  - Drag to define bounds
-  - Display dimensions
-  - 验证：Drag creates rectangle
+  - Status: Complete (409 lines), basic tests pass, mock improvements needed
 
 ### Drawing Tools
 
-- [ ] **T1.7** Implement DrawTool class
+- [x] **T1.7** Implement DrawTool class
   - File: `src/cesium/gis/tools/DrawTool.ts`
   - Extend BaseTool
-  - Support all geometry types (point, line, polygon, circle, rectangle)
+  - Support all geometry types (point, line, polygon, circle)
   - Handle mouse events (click, move, double-click, right-click)
   - Emit completion events to GISStore
   - 验证：Can switch between different drawing modes

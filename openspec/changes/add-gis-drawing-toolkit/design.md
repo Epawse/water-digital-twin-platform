@@ -303,7 +303,7 @@ BaseTool (abstract)
 │   ├── handles mouse events
 │   ├── creates temporary preview entities
 │   ├── emits completion events
-│   └── Used by Point/Line/Polygon/Circle/Rectangle
+│   └── Used by Point/Line/Polygon/Circle
 ├── SelectTool
 └── ModifyTool
 
@@ -318,9 +318,10 @@ Concrete Graphics:
 ├── PointGraphic extends BaseGraphic
 ├── LineGraphic extends BaseGraphic
 ├── PolygonGraphic extends BaseGraphic
+│   ├── Free mode (custom polygon)
+│   ├── Rectangle mode (4-vertex auto-complete)
 │   └── uses independent Polyline for outline
-├── CircleGraphic extends BaseGraphic
-└── RectangleGraphic extends BaseGraphic
+└── CircleGraphic extends BaseGraphic
 ```
 
 ### Directory Structure
