@@ -126,10 +126,10 @@ export class RectangleGraphic extends BaseGraphic {
       rectangle: {
         coordinates: this.rectangleBounds,
         material: this.getMaterial(),
-        outline: true,
-        outlineColor: Cesium.Color.fromCssColorString(this.style.strokeColor || '#ffcc33'),
-        outlineWidth: this.style.strokeWidth || 2,
-        heightReference: this.heightReference
+        height: 0, // Required when using heightReference
+        heightReference: this.heightReference,
+        // Note: outline is disabled in terrain clamp mode (Cesium limitation)
+        outline: false
       }
     })
 

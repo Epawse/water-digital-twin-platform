@@ -99,8 +99,9 @@ export class PolygonGraphic extends BaseGraphic {
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(this.positions),
         material: this.getMaterial(),
+        height: 0, // Required when using heightReference
         heightReference: this.heightReference,
-        // 不使用 Cesium 自带的 outline（宽度限制）
+        // 不使用 Cesium 自带的 outline（宽度限制且贴地模式不支持）
         outline: false
       }
     })
