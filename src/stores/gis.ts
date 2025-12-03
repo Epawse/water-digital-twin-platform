@@ -107,6 +107,9 @@ export const useGISStore = defineStore('gis', () => {
   /** Measurement count (for backward compatibility) */
   const measurementCount = computed(() => measurements.value.length)
 
+  /** Active tool (backward compatibility alias for toolType) */
+  const activeTool = computed(() => toolType.value)
+
   // ========== Tool Management Actions ==========
 
   /**
@@ -485,6 +488,7 @@ export const useGISStore = defineStore('gis', () => {
     featuresArray,
     selectedFeatures,
     measurementCount,
+    activeTool,
 
     // ========== Tool Management ==========
     setViewer,

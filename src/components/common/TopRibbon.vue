@@ -33,8 +33,12 @@
 					title="点标注"><i class="fa-solid fa-map-pin"></i></button>
 				<button class="btn-icon-text" :class="{ active: drawTool === 'line' }" @click="toggleDrawTool('line')"
 					title="线绘制"><i class="fa-solid fa-route"></i></button>
+			<button class="btn-icon-text" :class="{ active: drawTool === 'polygon' }" @click="toggleDrawTool('polygon')"
+				title="多边形"><i class="fa-solid fa-draw-polygon"></i></button>
 				<button class="btn-icon-text" :class="{ active: drawTool === 'circle' }" @click="toggleDrawTool('circle')"
 					title="圆形"><i class="fa-solid fa-circle"></i></button>
+			<button class="btn-icon-text" :class="{ active: drawTool === 'rectangle' }" @click="toggleDrawTool('rectangle')"
+				title="矩形"><i class="fa-solid fa-square"></i></button>
 			</div>
 
 			<div class="tool-divider"></div>
@@ -115,8 +119,7 @@
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useCesiumStore } from '@/stores/cesium'
-import { useMeasureStore } from '@/stores/measure'
-import { useDrawStore } from '@/stores/draw'
+import { useGISStore } from '@/stores/gis'
 import { baseInkStyle, baseColorStyle } from '@/mock/baseMapData'
 import type { MeasureToolType } from '@/types/measure'
 import type { DrawToolType } from '@/types/draw'
@@ -125,11 +128,18 @@ declare const Cesium: any
 
 const appStore = useAppStore()
 const cesiumStore = useCesiumStore()
-const measureStore = useMeasureStore()
-const drawStore = useDrawStore()
+const gisStore = useGISStore()
 const isUiHidden = computed(() => appStore.isUiHidden)
-const measureTool = computed(() => measureStore.activeTool)
-const drawTool = computed(() => drawStore.activeTool)
+
+// Use activeTool to determine which type of tool is active
+const measureTool = computed(() => {
+	const tool = gisStore.activeTool
+	return (tool === 'distance' || tool === 'area') ? tool as MeasureToolType : null
+})
+const drawTool = computed(() => {
+	const tool = gisStore.activeTool
+	return (tool === 'point' || tool === 'line' || tool === 'polygon' || tool === 'circle' || tool === 'rectangle') ? tool as DrawToolType : null
+})
 
 const timeStr = ref('')
 const isFullscreen = ref(false)
@@ -282,28 +292,23 @@ function selectBasemap(type: string) {
 }
 
 function toggleMeasureTool(tool: MeasureToolType) {
-	// Deactivate draw tool when activating measure tool
-	if (tool && measureStore.activeTool !== tool && drawStore.activeTool) {
-		drawStore.setTool(null)
-	}
-
-	if (measureStore.activeTool === tool) {
-		// Deactivate if clicking the same tool
-		measureStore.setTool(null)
+	// Toggle: if clicking the same tool, deactivate it; otherwise, activate it
+	if (gisStore.activeTool === tool) {
+		gisStore.setTool(null)
 	} else {
-		// Activate the selected tool
-		measureStore.setTool(tool)
+		// Activate the selected tool (will automatically deactivate other tools)
+		gisStore.setTool(tool)
 	}
 }
 
 function toggleDrawTool(tool: DrawToolType) {
-	// Deactivate measure tool when activating draw tool
-	if (tool && drawStore.activeTool !== tool && measureStore.activeTool) {
-		measureStore.setTool(null)
+	// Toggle: if clicking the same tool, deactivate it; otherwise, activate it
+	if (gisStore.activeTool === tool) {
+		gisStore.setTool(null)
+	} else {
+		// Activate the selected tool (will automatically deactivate other tools)
+		gisStore.setTool(tool)
 	}
-
-	// Toggle the draw tool (same behavior as measure tool)
-	drawStore.setTool(tool)
 }
 
 // Initialize globe filter system
