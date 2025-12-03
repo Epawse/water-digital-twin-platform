@@ -50,6 +50,10 @@ CLAUDE.md
 AGENTS.md
 *.local.md
 
+# Chat 日志和临时分析
+chat-*.txt
+GIS_CODE.md
+
 # Cesium 库管理
 # 注：Cesium-1.136-epawse 是定制版本，需要上传
 # 只排除官方的 1.82 版本
@@ -101,5 +105,7 @@ backend/app/utils/scanner.py
 # 本地忽略不会被提交到 git，其他开发者的设置完全独立
 CLAUDE.md
 AGENTS.md
-openspec/
 _context/
+
+# Note: openspec/ 包含项目规格文档，应该被提交
+# 如果有 openspec 的个人草稿，使用 openspec/draft/ 并在上面添加排除规则
