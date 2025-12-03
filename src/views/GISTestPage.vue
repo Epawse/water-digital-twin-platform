@@ -92,6 +92,16 @@ function testDrawPoint() {
 		const position = Cesium.Cartesian3.fromDegrees(114.3055, 30.5928, 100)
 		point.create([position])
 
+		// 注册到 GISStore
+		const feature = {
+			id: point.id,
+			type: 'point' as const,
+			name: point.name,
+			properties: {},
+			createdAt: new Date()
+		}
+		gisStore.addFeature(feature, point)
+
 		lastAction.value = `✅ 创建点: ${point.id}`
 		updateGraphicsList()
 	} catch (error) {
@@ -123,6 +133,16 @@ function testDrawLine() {
 		]
 		line.create(positions)
 
+		// 注册到 GISStore
+		const feature = {
+			id: line.id,
+			type: 'line' as const,
+			name: line.name,
+			properties: {},
+			createdAt: new Date()
+		}
+		gisStore.addFeature(feature, line)
+
 		lastAction.value = `✅ 创建线: ${line.id} (${positions.length} 点)`
 		updateGraphicsList()
 	} catch (error) {
@@ -152,6 +172,16 @@ function testDrawCircle() {
 		const edge = Cesium.Cartesian3.fromDegrees(114.308, 30.593, 100)
 		circle.create([center, edge])
 
+		// 注册到 GISStore
+		const feature = {
+			id: circle.id,
+			type: 'circle' as const,
+			name: circle.name,
+			properties: {},
+			createdAt: new Date()
+		}
+		gisStore.addFeature(feature, circle)
+
 		lastAction.value = `✅ 创建圆: ${circle.id}`
 		updateGraphicsList()
 	} catch (error) {
@@ -180,6 +210,16 @@ function testDrawRectangle() {
 		const corner1 = Cesium.Cartesian3.fromDegrees(114.300, 30.585, 100)
 		const corner2 = Cesium.Cartesian3.fromDegrees(114.308, 30.590, 100)
 		rectangle.create([corner1, corner2])
+
+		// 注册到 GISStore
+		const feature = {
+			id: rectangle.id,
+			type: 'rectangle' as const,
+			name: rectangle.name,
+			properties: {},
+			createdAt: new Date()
+		}
+		gisStore.addFeature(feature, rectangle)
 
 		lastAction.value = `✅ 创建矩形: ${rectangle.id}`
 		updateGraphicsList()
@@ -214,6 +254,16 @@ function testDrawPolygon() {
 			Cesium.Cartesian3.fromDegrees(114.310, 30.590, 100)
 		]
 		polygon.create(positions)
+
+		// 注册到 GISStore
+		const feature = {
+			id: polygon.id,
+			type: 'polygon' as const,
+			name: polygon.name,
+			properties: {},
+			createdAt: new Date()
+		}
+		gisStore.addFeature(feature, polygon)
 
 		lastAction.value = `✅ 创建多边形: ${polygon.id} (${positions.length} 点)`
 		updateGraphicsList()
