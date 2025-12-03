@@ -139,13 +139,13 @@
 
 ### Point & Line Drawing (Using @cesium-extends/drawer)
 
-- [ ] **T1.3** Implement PointGraphic class
+- [x] **T1.3** Implement PointGraphic class
   - File: `src/cesium/gis/graphics/PointGraphic.ts`
   - Extend BaseGraphic
-  - **Adapt code from @cesium-extends/drawer**
-  - Support custom icon (billboard)
+  - Support custom icon (billboard) and simple point
   - Support text label
   - 验证：Single click adds point with label
+  - Status: Basic implementation complete (238 lines), edit mode to be implemented
 
 - [ ] **T1.4** Implement LineGraphic class
   - File: `src/cesium/gis/graphics/LineGraphic.ts`
