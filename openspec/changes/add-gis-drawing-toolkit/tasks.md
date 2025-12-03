@@ -147,13 +147,15 @@
   - 验证：Single click adds point with label
   - Status: Basic implementation complete (238 lines), edit mode to be implemented
 
-- [ ] **T1.4** Implement LineGraphic class
+- [x] **T1.4** Implement LineGraphic class
   - File: `src/cesium/gis/graphics/LineGraphic.ts`
   - Extend BaseGraphic
-  - **Adapt code from @cesium-extends/drawer**
-  - Use CallbackProperty for preview
-  - Calculate and display length
+  - Use Cesium.PolylineGraphics for rendering
+  - Calculate length using geodesic distance
+  - Support line styles: solid, dashed, dotted
+  - Display length label at midpoint
   - 验证：Continuous clicks draw polyline
+  - Status: Complete (392 lines), 14/14 tests pass
 
 ### Circle & Rectangle
 
