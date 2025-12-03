@@ -5,6 +5,7 @@ import Meteorology from '@/views/Meteorology.vue';
 import DataGovernance from '@/views/DataGovernance.vue';
 import DeviceManager from '@/views/DeviceManager.vue';
 import AiEngineering from '@/views/AiEngineering.vue';
+import GISTestPage from '@/views/GISTestPage.vue';
 import { useAppStore } from '@/stores/app';
 
 const routes: RouteRecordRaw[] = [
@@ -15,6 +16,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/data', name: 'data', component: DataGovernance },
   { path: '/device', name: 'device', component: DeviceManager },
   { path: '/ai', name: 'ai', component: AiEngineering },
+  { path: '/gis-test', name: 'gis-test', component: GISTestPage },
 ];
 
 const router = createRouter({
