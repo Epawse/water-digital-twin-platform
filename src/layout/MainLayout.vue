@@ -3,6 +3,9 @@
     <!-- Layer 4: Top Ribbon -->
     <TopRibbon />
 
+    <!-- Measure Panel (floating) -->
+    <MeasurePanel />
+
     <!-- Layer 2: UI Layer (Router View) -->
     <div class="ui-layer">
       <router-view v-slot="{ Component }">
@@ -19,6 +22,7 @@
 
 <script setup lang="ts">
 import TopRibbon from '@/components/common/TopRibbon.vue';
+import MeasurePanel from '@/components/common/MeasurePanel.vue';
 import BottomDock from '@/layout/BottomDock.vue';
 </script>
 

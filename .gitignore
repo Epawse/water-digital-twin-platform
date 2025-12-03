@@ -109,3 +109,6 @@ _context/
 
 # Note: openspec/ 包含项目规格文档，应该被提交
 # 如果有 openspec 的个人草稿，使用 openspec/draft/ 并在上面添加排除规则
+
+# 第三方库的 npm 包目录（有独立 git）
+public/cesium-draw/
