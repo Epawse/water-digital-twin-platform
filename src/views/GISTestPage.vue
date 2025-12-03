@@ -287,6 +287,7 @@ onUnmounted(() => {
 	color: #E0E7FF;
 	font-size: 14px;
 	z-index: 1000;
+	pointer-events: auto; /* Enable click events (parent has pointer-events: none) */
 }
 
 .test-header {
