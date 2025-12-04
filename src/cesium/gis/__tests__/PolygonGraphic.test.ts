@@ -18,10 +18,11 @@ vi.mock('cesium', () => {
     height: 0
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const mockEllipsoid = {
     maximumRadius: 6378137,
     cartesianToCartographic: vi.fn(() => mockCartographic),
-    cartographicToCartesian: vi.fn((carto: any) => mockPositions[0])
+    cartographicToCartesian: vi.fn((_carto: any) => mockPositions[0])
   }
 
   return {
@@ -34,7 +35,7 @@ vi.mock('cesium', () => {
       height: height || 0
     })),
     Color: {
-      fromCssColorString: vi.fn((color: string) => ({
+      fromCssColorString: vi.fn((_color: string) => ({
         withAlpha: vi.fn((alpha: number) => ({ r: 1, g: 0.8, b: 0.2, a: alpha }))
       })),
       WHITE: { r: 1, g: 1, b: 1, a: 1 },
@@ -250,10 +251,10 @@ describe('PolygonGraphic', () => {
     polygon.create(mockPositions as any)
 
     polygon.hide()
-    expect(polygon.isVisible).toBe(false)
+    expect(polygon.visible).toBe(false)
 
     polygon.show()
-    expect(polygon.isVisible).toBe(true)
+    expect(polygon.visible).toBe(true)
   })
 
   it('应该支持移除功能', () => {

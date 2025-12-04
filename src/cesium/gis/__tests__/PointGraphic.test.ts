@@ -25,7 +25,10 @@ const mockViewer = {
 const mockCartesian3 = {
   x: 100,
   y: 200,
-  z: 300
+  z: 300,
+  clone: vi.fn(),
+  equals: vi.fn(),
+  equalsEpsilon: vi.fn()
 }
 
 // Mock Cesium static methods
@@ -66,7 +69,7 @@ const mockCesium = {
 }
 
 // 注入 mock
-global.Cesium = mockCesium as any
+;(global as any).Cesium = mockCesium
 
 describe('PointGraphic', () => {
   beforeEach(() => {

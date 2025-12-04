@@ -134,11 +134,11 @@ const isUiHidden = computed(() => appStore.isUiHidden)
 // Use activeTool to determine which type of tool is active
 const measureTool = computed(() => {
 	const tool = gisStore.activeTool
-	return (tool === 'distance' || tool === 'area') ? tool as MeasureToolType : null
+	return (tool === 'measure-distance' || tool === 'distance' || tool === 'measure-area' || tool === 'area') ? tool as MeasureToolType : null
 })
 const drawTool = computed(() => {
-	const tool = gisStore.activeTool
-	return (tool === 'point' || tool === 'line' || tool === 'polygon' || tool === 'circle' || tool === 'rectangle') ? tool as DrawToolType : null
+	const tool = gisStore.activeTool as string | null
+	return (tool === 'draw-point' || tool === 'point' || tool === 'draw-line' || tool === 'line' || tool === 'draw-polygon' || tool === 'polygon' || tool === 'draw-circle' || tool === 'circle' || tool === 'draw-rectangle' || tool === 'rectangle') ? tool as DrawToolType : null
 })
 
 const timeStr = ref('')

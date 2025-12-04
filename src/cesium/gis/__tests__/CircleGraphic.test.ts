@@ -12,19 +12,20 @@ vi.mock('cesium', () => {
     height: 0
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const mockEllipsoid = {
     maximumRadius: 6378137,
     cartesianToCartographic: vi.fn(() => mockCartographic),
-    cartographicToCartesian: vi.fn((carto: any) => mockCenterPosition)
+    cartographicToCartesian: vi.fn((_carto: any) => mockCenterPosition)
   }
 
   return {
     Cartesian3: {
-      midpoint: vi.fn((a: any, b: any, result: any) => mockCenterPosition)
+      midpoint: vi.fn((_a: any, _b: any, _result: any) => mockCenterPosition)
     },
     Cartesian2: vi.fn((x: number, y: number) => ({ x, y })),
     Color: {
-      fromCssColorString: vi.fn((color: string) => ({
+      fromCssColorString: vi.fn((_color: string) => ({
         withAlpha: vi.fn((alpha: number) => ({ r: 1, g: 0.8, b: 0.2, a: alpha }))
       })),
       WHITE: { r: 1, g: 1, b: 1, a: 1 },
@@ -204,17 +205,16 @@ describe('CircleGraphic', () => {
     circle.create([mockCenterPosition, mockEdgePosition] as any)
 
     circle.hide()
-    expect(circle.isVisible).toBe(false)
+    expect(circle.visible).toBe(false)
 
     circle.show()
-    expect(circle.isVisible).toBe(true)
+    expect(circle.visible).toBe(true)
   })
 
   it('应该支持移除功能', () => {
     const circle = new CircleGraphic(mockViewer)
     circle.create([mockCenterPosition, mockEdgePosition] as any)
 
-    const addCount = mockViewer.entities.add.mock.calls.length
     circle.remove()
 
     // 验证实体被移除

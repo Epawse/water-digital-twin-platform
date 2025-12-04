@@ -82,7 +82,7 @@ const mockCesium = {
 }
 
 // 注入 mock
-global.Cesium = mockCesium as any
+;(global as any).Cesium = mockCesium
 
 describe('LineGraphic', () => {
   beforeEach(() => {
@@ -227,8 +227,6 @@ describe('LineGraphic', () => {
   it('应该支持设置线型', () => {
     const line = new LineGraphic(mockViewer)
     line.create(mockPositions as any)
-
-    const initialCallCount = mockViewer.entities.add.mock.calls.length
 
     line.setLineStyle('dashed')
 

@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // Mock Cesium - 必须在 import 之前
 vi.mock('cesium', () => {
   const mockPosition1 = { x: 100, y: 200, z: 300 }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const mockPosition2 = { x: 150, y: 250, z: 300 }
 
   const mockCartographic1 = {
@@ -20,6 +21,7 @@ vi.mock('cesium', () => {
     height: 0
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const mockEllipsoid = {
     maximumRadius: 6378137,
     cartesianToCartographic: vi.fn((pos) => {
@@ -45,7 +47,7 @@ vi.mock('cesium', () => {
       center: vi.fn(() => mockCartographic1)
     },
     Color: {
-      fromCssColorString: vi.fn((color: string) => ({
+      fromCssColorString: vi.fn((_color: string) => ({
         withAlpha: vi.fn((alpha: number) => ({ r: 1, g: 0.8, b: 0.2, a: alpha }))
       })),
       WHITE: { r: 1, g: 1, b: 1, a: 1 },
@@ -209,10 +211,10 @@ describe('RectangleGraphic', () => {
     rectangle.create([mockPosition1, mockPosition2] as any)
 
     rectangle.hide()
-    expect(rectangle.isVisible).toBe(false)
+    expect(rectangle.visible).toBe(false)
 
     rectangle.show()
-    expect(rectangle.isVisible).toBe(true)
+    expect(rectangle.visible).toBe(true)
   })
 
   it('应该支持移除功能', () => {
