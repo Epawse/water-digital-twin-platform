@@ -106,7 +106,7 @@
                     title="显示/隐藏"
                     @click="toggleFeatureVisibility(feature.id)"
                   >
-                    <i class="fa-solid" :class="feature.visible !== false ? 'fa-eye' : 'fa-eye-slash'"></i>
+                    <i class="fa-solid" :class="isFeatureVisible(feature.id) ? 'fa-eye' : 'fa-eye-slash'"></i>
                   </button>
                   <button
                     class="action-btn"
@@ -280,6 +280,14 @@ function formatFeatureMeta(feature: any): string {
  */
 function selectFeature(featureId: string) {
   gisStore.selectFeature(featureId)
+}
+
+/**
+ * Check if feature is visible
+ */
+function isFeatureVisible(featureId: string): boolean {
+  const graphic = gisStore.graphics.get(featureId)
+  return graphic?.visible ?? true
 }
 
 /**
