@@ -278,8 +278,217 @@ export class DrawTool extends BaseTool {
    * 更新实时预览
    */
   private updatePreview(): void {
-    // TODO: 根据几何类型更新不同的预览
-    // 这部分将在后续实现具体的 Graphic 类时完善
+    if (!this.drawCursorPosition) return
+
+    // Clear previous preview
+    this.clearPreviewEntities()
+
+    // Create preview based on geometry type
+    switch (this.geometryType) {
+      case 'line':
+        this.updateLinePreview()
+        break
+      case 'polygon':
+        this.updatePolygonPreview()
+        break
+      case 'circle':
+        this.updateCirclePreview()
+        break
+      case 'rectangle':
+        this.updateRectanglePreview()
+        break
+      // Point doesn't need preview
+    }
+  }
+
+  /**
+   * 更新线预览
+   */
+  private updateLinePreview(): void {
+    if (this.vertices.length === 0 || !this.drawCursorPosition) return
+
+    // Get last vertex position
+    const lastVertex = this.vertices[this.vertices.length - 1]
+    const lastCartesian = Cesium.Cartesian3.fromDegrees(
+      lastVertex.longitude,
+      lastVertex.latitude,
+      lastVertex.height || 0
+    )
+
+    // Create preview line from last vertex to cursor
+    const previewLine = this.viewer.entities.add({
+      polyline: {
+        positions: [lastCartesian, this.drawCursorPosition],
+        width: this.style.strokeWidth,
+        material: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.5),
+        clampToGround: true
+      }
+    })
+    this.previewEntities.push(previewLine)
+
+    // Also preview the complete line if we have multiple vertices
+    if (this.vertices.length >= 2) {
+      const allPositions = this.vertices.map(v =>
+        Cesium.Cartesian3.fromDegrees(v.longitude, v.latitude, v.height || 0)
+      )
+      allPositions.push(this.drawCursorPosition)
+
+      const completeLine = this.viewer.entities.add({
+        polyline: {
+          positions: allPositions,
+          width: this.style.strokeWidth,
+          material: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.3),
+          clampToGround: true
+        }
+      })
+      this.previewEntities.push(completeLine)
+    }
+  }
+
+  /**
+   * 更新多边形预览
+   */
+  private updatePolygonPreview(): void {
+    if (this.vertices.length < 2 || !this.drawCursorPosition) return
+
+    // Create closed polygon preview
+    const positions = this.vertices.map(v =>
+      Cesium.Cartesian3.fromDegrees(v.longitude, v.latitude, v.height || 0)
+    )
+    positions.push(this.drawCursorPosition)
+
+    const previewPolygon = this.viewer.entities.add({
+      polygon: {
+        hierarchy: new Cesium.PolygonHierarchy(positions),
+        material: Cesium.Color.fromCssColorString(this.style.fillColor).withAlpha(this.style.fillOpacity * 0.5),
+        classificationType: Cesium.ClassificationType.TERRAIN
+      },
+      polyline: {
+        positions: positions,
+        width: this.style.strokeWidth,
+        material: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.7),
+        clampToGround: true
+      }
+    })
+    this.previewEntities.push(previewPolygon)
+  }
+
+  /**
+   * 更新圆形预览
+   */
+  private updateCirclePreview(): void {
+    if (this.vertices.length === 0 || !this.drawCursorPosition) return
+
+    // First vertex is circle center
+    const center = this.vertices[0]
+    const centerCartesian = Cesium.Cartesian3.fromDegrees(
+      center.longitude,
+      center.latitude,
+      center.height || 0
+    )
+
+    // Calculate radius
+    const radius = Cesium.Cartesian3.distance(centerCartesian, this.drawCursorPosition)
+
+    // Create preview circle
+    const previewCircle = this.viewer.entities.add({
+      position: centerCartesian,
+      ellipse: {
+        semiMajorAxis: radius,
+        semiMinorAxis: radius,
+        material: Cesium.Color.fromCssColorString(this.style.fillColor).withAlpha(this.style.fillOpacity * 0.5),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.7),
+        outlineWidth: this.style.strokeWidth,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+      }
+    })
+    this.previewEntities.push(previewCircle)
+
+    // Add radius label
+    const radiusLabel = this.viewer.entities.add({
+      position: this.drawCursorPosition,
+      label: {
+        text: `r=${(radius / 1000).toFixed(2)}km`,
+        font: '12px sans-serif',
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cesium.Cartesian2(0, -20),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    })
+    this.previewEntities.push(radiusLabel)
+  }
+
+  /**
+   * 更新矩形预览
+   */
+  private updateRectanglePreview(): void {
+    if (this.vertices.length === 0 || !this.drawCursorPosition) return
+
+    // First vertex is one corner
+    const corner1 = this.vertices[0]
+    const corner1Carto = Cesium.Cartographic.fromDegrees(corner1.longitude, corner1.latitude)
+    const corner2Carto = Cesium.Cartographic.fromCartesian(this.drawCursorPosition)
+
+    // Calculate rectangle bounds
+    const west = Math.min(corner1Carto.longitude, corner2Carto.longitude)
+    const east = Math.max(corner1Carto.longitude, corner2Carto.longitude)
+    const south = Math.min(corner1Carto.latitude, corner2Carto.latitude)
+    const north = Math.max(corner1Carto.latitude, corner2Carto.latitude)
+
+    const rectangleBounds = Cesium.Rectangle.fromRadians(west, south, east, north)
+
+    // Create preview rectangle
+    const previewRectangle = this.viewer.entities.add({
+      rectangle: {
+        coordinates: rectangleBounds,
+        material: Cesium.Color.fromCssColorString(this.style.fillColor).withAlpha(this.style.fillOpacity * 0.5),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.7),
+        outlineWidth: this.style.strokeWidth,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+      }
+    })
+    this.previewEntities.push(previewRectangle)
+
+    // Add dimensions label
+    const centerLon = (west + east) / 2
+    const centerLat = (south + north) / 2
+    const centerPos = Cesium.Cartesian3.fromRadians(centerLon, centerLat, 0)
+
+    const width = Cesium.Cartesian3.distance(
+      Cesium.Cartesian3.fromRadians(west, centerLat, 0),
+      Cesium.Cartesian3.fromRadians(east, centerLat, 0)
+    )
+    const height = Cesium.Cartesian3.distance(
+      Cesium.Cartesian3.fromRadians(centerLon, south, 0),
+      Cesium.Cartesian3.fromRadians(centerLon, north, 0)
+    )
+
+    const dimensionsLabel = this.viewer.entities.add({
+      position: centerPos,
+      label: {
+        text: `${(width / 1000).toFixed(2)}km × ${(height / 1000).toFixed(2)}km`,
+        font: '12px sans-serif',
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    })
+    this.previewEntities.push(dimensionsLabel)
+  }
+
+  /**
+   * 清除预览实体（仅清除预览，不清除顶点标记）
+   */
+  private clearPreviewEntities(): void {
+    this.previewEntities.forEach(entity => this.viewer.entities.remove(entity))
+    this.previewEntities = []
   }
 
   /**
