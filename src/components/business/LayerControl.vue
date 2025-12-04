@@ -286,9 +286,13 @@ function selectFeature(featureId: string) {
  * Toggle feature visibility
  */
 function toggleFeatureVisibility(featureId: string) {
-  const graphic = gisStore.features.get(featureId)
+  const graphic = gisStore.graphics.get(featureId)
   if (graphic) {
-    graphic.visible = !graphic.visible
+    if (graphic.visible) {
+      graphic.hide()
+    } else {
+      graphic.show()
+    }
   }
 }
 
@@ -296,11 +300,31 @@ function toggleFeatureVisibility(featureId: string) {
  * Locate (fly to) a feature
  */
 function locateFeature(featureId: string) {
-  const graphic = gisStore.features.get(featureId)
-  if (graphic && graphic.getCenter) {
-    const center = graphic.getCenter()
-    // TODO: Fly to center position using Cesium camera
-    console.log('Fly to feature:', featureId, center)
+  const graphic = gisStore.graphics.get(featureId)
+  if (!graphic) {
+    console.error('Graphic not found:', featureId)
+    return
+  }
+
+  // Get center position
+  const center = graphic.getCenter?.()
+  if (!center) {
+    console.error('Graphic does not have getCenter method:', featureId)
+    return
+  }
+
+  // Fly camera to center
+  const viewer = gisStore.viewer
+  if (viewer && viewer.camera) {
+    viewer.camera.flyTo({
+      destination: center,
+      duration: 1.5,
+      offset: new (window as any).Cesium.HeadingPitchRange(
+        0,
+        -(window as any).Cesium.Math.toRadians(45), // Look down at 45 degrees
+        5000 // 5km distance
+      )
+    })
   }
 }
 
@@ -330,12 +354,23 @@ function exportFeatures() {
 }
 
 /**
- * Select all features
+ * Select all features (toggle)
  */
 function selectAllFeatures() {
-  gisStore.featuresArray.forEach(f => {
-    gisStore.selectFeature(f.id, true) // true = multi-select
-  })
+  const allSelected = gisStore.featuresArray.length > 0 &&
+    gisStore.featuresArray.every(f => gisStore.selectedFeatureIds.has(f.id))
+
+  if (allSelected) {
+    // Deselect all
+    gisStore.featuresArray.forEach(f => {
+      gisStore.deselectFeature(f.id)
+    })
+  } else {
+    // Select all
+    gisStore.featuresArray.forEach(f => {
+      gisStore.selectFeature(f.id, true) // true = multi-select
+    })
+  }
 }
 
 /**

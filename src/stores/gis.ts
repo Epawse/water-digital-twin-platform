@@ -410,6 +410,32 @@ export const useGISStore = defineStore('gis', () => {
     mode.value = 'none'
   }
 
+  // ========== Import/Export Actions ==========
+
+  /**
+   * Export all features as GeoJSON
+   * @returns GeoJSON FeatureCollection as string
+   */
+  function exportGeoJSON(): string {
+    const featureCollection = {
+      type: 'FeatureCollection',
+      features: Array.from(features.value.values()).map(feature => ({
+        type: 'Feature',
+        id: feature.id,
+        geometry: feature.geometry,
+        properties: {
+          name: feature.name,
+          type: feature.type,
+          ...feature.properties,
+          style: feature.style,
+          createdAt: feature.createdAt?.toISOString()
+        }
+      }))
+    }
+
+    return JSON.stringify(featureCollection, null, 2)
+  }
+
   // ========== Settings Actions ==========
 
   /**
@@ -529,6 +555,9 @@ export const useGISStore = defineStore('gis', () => {
     setSnapTolerance,
     setShowTips,
     setContinuousMode,
+
+    // ========== Import/Export ==========
+    exportGeoJSON,
 
     // ========== Reset ==========
     reset,

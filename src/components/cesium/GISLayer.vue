@@ -148,7 +148,7 @@ function createGraphicFromFeature(feature: Feature, viewer: any) {
           style
         })
         break
-      case 'circle':
+      case 'circle': {
         // Circle needs center and radius
         if (!properties?.radius) {
           console.error('Circle missing radius property:', feature)
@@ -163,14 +163,17 @@ function createGraphicFromFeature(feature: Feature, viewer: any) {
           centerCarto.latitude,
           centerCarto.height
         )
-        positions = [centerPos, edgePos]
+        const circlePositions = [centerPos, edgePos]
 
         graphic = new CircleGraphic(viewer, {
           name,
           style
         })
-        break
-      case 'rectangle':
+        graphic.create(circlePositions)
+        console.log(`Created circle graphic:`, feature.id, circlePositions.length, 'positions')
+        return graphic
+      }
+      case 'rectangle': {
         // Rectangle is stored as Polygon with 5 positions (4 corners + closing point)
         // RectangleGraphic.create() expects [corner1, corner2] (opposite corners)
         if (positions.length < 4) {
@@ -178,13 +181,16 @@ function createGraphicFromFeature(feature: Feature, viewer: any) {
           return null
         }
         // Use corner 0 (SW) and corner 2 (NE) as opposite corners
-        positions = [positions[0], positions[2]]
+        const rectanglePositions = [positions[0], positions[2]]
 
         graphic = new RectangleGraphic(viewer, {
           name,
           style
         })
-        break
+        graphic.create(rectanglePositions)
+        console.log(`Created rectangle graphic:`, feature.id, rectanglePositions.length, 'positions')
+        return graphic
+      }
       case 'polygon':
         graphic = new PolygonGraphic(viewer, {
           name,
