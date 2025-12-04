@@ -96,7 +96,10 @@ export class DrawTool extends BaseTool {
 
   /** 鼠标移动节流标记 */
   private lastMoveTime: number = 0
-  private readonly MOVE_THROTTLE_MS = 16 // ~60fps
+  private readonly MOVE_THROTTLE_MS = 50 // ~20fps - optimized for preview performance
+
+  /** 上次预览时的顶点数量(用于检测是否需要重新创建预览) */
+  private lastPreviewVerticesCount: number = 0
 
   /**
    * 构造函数
@@ -275,39 +278,46 @@ export class DrawTool extends BaseTool {
   }
 
   /**
-   * 更新实时预览
+   * 更新实时预览 (优化: 只在必要时重新创建实体)
    */
   private updatePreview(): void {
     if (!this.drawCursorPosition) return
 
-    // Clear previous preview
-    this.clearPreviewEntities()
+    // 检查是否需要重新创建预览实体
+    // 只在顶点数量变化时才重新创建,否则 CallbackProperty 会自动更新
+    const needsRecreate = this.vertices.length !== this.lastPreviewVerticesCount
 
-    // Create preview based on geometry type
-    switch (this.geometryType) {
-      case 'line':
-        this.updateLinePreview()
-        break
-      case 'polygon':
-        this.updatePolygonPreview()
-        break
-      case 'circle':
-        this.updateCirclePreview()
-        break
-      case 'rectangle':
-        this.updateRectanglePreview()
-        break
-      // Point doesn't need preview
+    if (needsRecreate) {
+      // 顶点数量变化,需要清除旧预览并重新创建
+      this.clearPreviewEntities()
+      this.lastPreviewVerticesCount = this.vertices.length
+
+      // Create preview based on geometry type
+      switch (this.geometryType) {
+        case 'line':
+          this.updateLinePreview()
+          break
+        case 'polygon':
+          this.updatePolygonPreview()
+          break
+        case 'circle':
+          this.updateCirclePreview()
+          break
+        case 'rectangle':
+          this.updateRectanglePreview()
+          break
+        // Point doesn't need preview
+      }
     }
+    // 如果不需要重新创建,drawCursorPosition 的更新会自动触发 CallbackProperty 回调
   }
 
   /**
-   * 更新线预览
+   * 更新线预览 (使用 CallbackProperty 优化性能)
    */
   private updateLinePreview(): void {
     if (this.vertices.length === 0 || !this.drawCursorPosition) return
 
-    // Get last vertex position
     const lastVertex = this.vertices[this.vertices.length - 1]
     const lastCartesian = Cesium.Cartesian3.fromDegrees(
       lastVertex.longitude,
@@ -315,10 +325,12 @@ export class DrawTool extends BaseTool {
       lastVertex.height || 0
     )
 
-    // Create preview line from last vertex to cursor
+    // 使用 CallbackProperty 动态更新位置
     const previewLine = this.viewer.entities.add({
       polyline: {
-        positions: [lastCartesian, this.drawCursorPosition],
+        positions: new Cesium.CallbackProperty(() => {
+          return this.drawCursorPosition ? [lastCartesian, this.drawCursorPosition] : []
+        }, false),
         width: this.style.strokeWidth,
         material: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.5),
         clampToGround: true
@@ -326,16 +338,17 @@ export class DrawTool extends BaseTool {
     })
     this.previewEntities.push(previewLine)
 
-    // Also preview the complete line if we have multiple vertices
+    // 完整线预览(仅在有多个顶点时)
     if (this.vertices.length >= 2) {
-      const allPositions = this.vertices.map(v =>
+      const staticPositions = this.vertices.map(v =>
         Cesium.Cartesian3.fromDegrees(v.longitude, v.latitude, v.height || 0)
       )
-      allPositions.push(this.drawCursorPosition)
 
       const completeLine = this.viewer.entities.add({
         polyline: {
-          positions: allPositions,
+          positions: new Cesium.CallbackProperty(() => {
+            return this.drawCursorPosition ? [...staticPositions, this.drawCursorPosition] : staticPositions
+          }, false),
           width: this.style.strokeWidth,
           material: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.3),
           clampToGround: true
@@ -346,25 +359,29 @@ export class DrawTool extends BaseTool {
   }
 
   /**
-   * 更新多边形预览
+   * 更新多边形预览 (使用 CallbackProperty 优化性能)
    */
   private updatePolygonPreview(): void {
     if (this.vertices.length < 2 || !this.drawCursorPosition) return
 
-    // Create closed polygon preview
-    const positions = this.vertices.map(v =>
+    const staticPositions = this.vertices.map(v =>
       Cesium.Cartesian3.fromDegrees(v.longitude, v.latitude, v.height || 0)
     )
-    positions.push(this.drawCursorPosition)
 
+    // 使用 CallbackProperty 动态更新多边形层级结构
     const previewPolygon = this.viewer.entities.add({
       polygon: {
-        hierarchy: new Cesium.PolygonHierarchy(positions),
+        hierarchy: new Cesium.CallbackProperty(() => {
+          if (!this.drawCursorPosition) return new Cesium.PolygonHierarchy(staticPositions)
+          return new Cesium.PolygonHierarchy([...staticPositions, this.drawCursorPosition])
+        }, false),
         material: Cesium.Color.fromCssColorString(this.style.fillColor).withAlpha(this.style.fillOpacity * 0.5),
         classificationType: Cesium.ClassificationType.TERRAIN
       },
       polyline: {
-        positions: positions,
+        positions: new Cesium.CallbackProperty(() => {
+          return this.drawCursorPosition ? [...staticPositions, this.drawCursorPosition] : staticPositions
+        }, false),
         width: this.style.strokeWidth,
         material: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.7),
         clampToGround: true
@@ -374,12 +391,11 @@ export class DrawTool extends BaseTool {
   }
 
   /**
-   * 更新圆形预览
+   * 更新圆形预览 (使用 CallbackProperty 优化性能)
    */
   private updateCirclePreview(): void {
     if (this.vertices.length === 0 || !this.drawCursorPosition) return
 
-    // First vertex is circle center
     const center = this.vertices[0]
     const centerCartesian = Cesium.Cartesian3.fromDegrees(
       center.longitude,
@@ -387,15 +403,16 @@ export class DrawTool extends BaseTool {
       center.height || 0
     )
 
-    // Calculate radius
-    const radius = Cesium.Cartesian3.distance(centerCartesian, this.drawCursorPosition)
-
-    // Create preview circle
+    // 使用 CallbackProperty 动态计算半径
     const previewCircle = this.viewer.entities.add({
       position: centerCartesian,
       ellipse: {
-        semiMajorAxis: radius,
-        semiMinorAxis: radius,
+        semiMajorAxis: new Cesium.CallbackProperty(() => {
+          return this.drawCursorPosition ? Cesium.Cartesian3.distance(centerCartesian, this.drawCursorPosition) : 0
+        }, false),
+        semiMinorAxis: new Cesium.CallbackProperty(() => {
+          return this.drawCursorPosition ? Cesium.Cartesian3.distance(centerCartesian, this.drawCursorPosition) : 0
+        }, false),
         material: Cesium.Color.fromCssColorString(this.style.fillColor).withAlpha(this.style.fillOpacity * 0.5),
         outline: true,
         outlineColor: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.7),
@@ -405,11 +422,15 @@ export class DrawTool extends BaseTool {
     })
     this.previewEntities.push(previewCircle)
 
-    // Add radius label
+    // 动态半径标签
     const radiusLabel = this.viewer.entities.add({
-      position: this.drawCursorPosition,
+      position: new Cesium.CallbackProperty(() => this.drawCursorPosition || centerCartesian, false),
       label: {
-        text: `r=${(radius / 1000).toFixed(2)}km`,
+        text: new Cesium.CallbackProperty(() => {
+          if (!this.drawCursorPosition) return ''
+          const radius = Cesium.Cartesian3.distance(centerCartesian, this.drawCursorPosition)
+          return `r=${(radius / 1000).toFixed(2)}km`
+        }, false),
         font: '12px sans-serif',
         fillColor: Cesium.Color.WHITE,
         outlineColor: Cesium.Color.BLACK,
@@ -423,28 +444,28 @@ export class DrawTool extends BaseTool {
   }
 
   /**
-   * 更新矩形预览
+   * 更新矩形预览 (使用 CallbackProperty 优化性能)
    */
   private updateRectanglePreview(): void {
     if (this.vertices.length === 0 || !this.drawCursorPosition) return
 
-    // First vertex is one corner
     const corner1 = this.vertices[0]
     const corner1Carto = Cesium.Cartographic.fromDegrees(corner1.longitude, corner1.latitude)
-    const corner2Carto = Cesium.Cartographic.fromCartesian(this.drawCursorPosition)
 
-    // Calculate rectangle bounds
-    const west = Math.min(corner1Carto.longitude, corner2Carto.longitude)
-    const east = Math.max(corner1Carto.longitude, corner2Carto.longitude)
-    const south = Math.min(corner1Carto.latitude, corner2Carto.latitude)
-    const north = Math.max(corner1Carto.latitude, corner2Carto.latitude)
-
-    const rectangleBounds = Cesium.Rectangle.fromRadians(west, south, east, north)
-
-    // Create preview rectangle
+    // 使用 CallbackProperty 动态计算矩形边界
     const previewRectangle = this.viewer.entities.add({
       rectangle: {
-        coordinates: rectangleBounds,
+        coordinates: new Cesium.CallbackProperty(() => {
+          if (!this.drawCursorPosition) return Cesium.Rectangle.fromDegrees(0, 0, 0, 0)
+
+          const corner2Carto = Cesium.Cartographic.fromCartesian(this.drawCursorPosition)
+          const west = Math.min(corner1Carto.longitude, corner2Carto.longitude)
+          const east = Math.max(corner1Carto.longitude, corner2Carto.longitude)
+          const south = Math.min(corner1Carto.latitude, corner2Carto.latitude)
+          const north = Math.max(corner1Carto.latitude, corner2Carto.latitude)
+
+          return Cesium.Rectangle.fromRadians(west, south, east, north)
+        }, false),
         material: Cesium.Color.fromCssColorString(this.style.fillColor).withAlpha(this.style.fillOpacity * 0.5),
         outline: true,
         outlineColor: Cesium.Color.fromCssColorString(this.style.strokeColor).withAlpha(0.7),
@@ -454,24 +475,35 @@ export class DrawTool extends BaseTool {
     })
     this.previewEntities.push(previewRectangle)
 
-    // Add dimensions label
-    const centerLon = (west + east) / 2
-    const centerLat = (south + north) / 2
-    const centerPos = Cesium.Cartesian3.fromRadians(centerLon, centerLat, 0)
-
-    const width = Cesium.Cartesian3.distance(
-      Cesium.Cartesian3.fromRadians(west, centerLat, 0),
-      Cesium.Cartesian3.fromRadians(east, centerLat, 0)
-    )
-    const height = Cesium.Cartesian3.distance(
-      Cesium.Cartesian3.fromRadians(centerLon, south, 0),
-      Cesium.Cartesian3.fromRadians(centerLon, north, 0)
-    )
-
+    // 动态尺寸标签
     const dimensionsLabel = this.viewer.entities.add({
-      position: centerPos,
+      position: new Cesium.CallbackProperty(() => {
+        if (!this.drawCursorPosition) return Cesium.Cartesian3.fromDegrees(corner1.longitude, corner1.latitude)
+
+        const corner2Carto = Cesium.Cartographic.fromCartesian(this.drawCursorPosition)
+        const centerLon = (corner1Carto.longitude + corner2Carto.longitude) / 2
+        const centerLat = (corner1Carto.latitude + corner2Carto.latitude) / 2
+        return Cesium.Cartesian3.fromRadians(centerLon, centerLat, 0)
+      }, false),
       label: {
-        text: `${(width / 1000).toFixed(2)}km × ${(height / 1000).toFixed(2)}km`,
+        text: new Cesium.CallbackProperty(() => {
+          if (!this.drawCursorPosition) return ''
+
+          const corner2Carto = Cesium.Cartographic.fromCartesian(this.drawCursorPosition)
+          const centerLon = (corner1Carto.longitude + corner2Carto.longitude) / 2
+          const centerLat = (corner1Carto.latitude + corner2Carto.latitude) / 2
+
+          const width = Cesium.Cartesian3.distance(
+            Cesium.Cartesian3.fromRadians(Math.min(corner1Carto.longitude, corner2Carto.longitude), centerLat, 0),
+            Cesium.Cartesian3.fromRadians(Math.max(corner1Carto.longitude, corner2Carto.longitude), centerLat, 0)
+          )
+          const height = Cesium.Cartesian3.distance(
+            Cesium.Cartesian3.fromRadians(centerLon, Math.min(corner1Carto.latitude, corner2Carto.latitude), 0),
+            Cesium.Cartesian3.fromRadians(centerLon, Math.max(corner1Carto.latitude, corner2Carto.latitude), 0)
+          )
+
+          return `${(width / 1000).toFixed(2)}km × ${(height / 1000).toFixed(2)}km`
+        }, false),
         font: '12px sans-serif',
         fillColor: Cesium.Color.WHITE,
         outlineColor: Cesium.Color.BLACK,
@@ -682,6 +714,7 @@ export class DrawTool extends BaseTool {
   private reset(): void {
     this.vertices = []
     this.drawCursorPosition = null
+    this.lastPreviewVerticesCount = 0
   }
 
   /**
