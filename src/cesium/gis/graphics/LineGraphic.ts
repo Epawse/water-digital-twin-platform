@@ -274,6 +274,24 @@ export class LineGraphic extends BaseGraphic {
   /**
    * 导出为 GeoJSON 格式
    */
+  /**
+   * 获取图形中心点（线段中点）
+   */
+  public getCenter(): Cesium.Cartesian3 {
+    if (!this.lineEntity || !this.lineEntity.polyline || !this.lineEntity.polyline.positions) {
+      throw new Error('LineGraphic has no positions')
+    }
+
+    const positions = this.lineEntity.polyline.positions.getValue(Cesium.JulianDate.now())
+    if (!positions || positions.length === 0) {
+      throw new Error('LineGraphic positions are empty')
+    }
+
+    // Return middle point of the line
+    const middleIndex = Math.floor(positions.length / 2)
+    return positions[middleIndex]
+  }
+
   public toGeoJSON(): any {
     if (!this.lineEntity || !this.lineEntity.polyline?.positions) {
       return null

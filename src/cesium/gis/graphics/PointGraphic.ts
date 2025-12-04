@@ -233,6 +233,17 @@ export class PointGraphic extends BaseGraphic {
   }
 
   /**
+   * 获取图形中心点（对于点图形，就是点本身的位置）
+   */
+  public getCenter(): Cesium.Cartesian3 {
+    const position = this.getPosition()
+    if (!position) {
+      throw new Error('PointGraphic has no position')
+    }
+    return position
+  }
+
+  /**
    * 获取地理坐标
    */
   public getCoordinate(): { longitude: number; latitude: number; height: number } | null {

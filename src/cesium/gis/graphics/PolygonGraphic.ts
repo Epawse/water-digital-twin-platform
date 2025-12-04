@@ -387,6 +387,36 @@ export class PolygonGraphic extends BaseGraphic {
   /**
    * 导出为 GeoJSON
    */
+  /**
+   * 获取图形中心点（多边形重心）
+   */
+  public getCenter(): Cesium.Cartesian3 {
+    if (!this.polygonEntity || !this.polygonEntity.polygon || !this.polygonEntity.polygon.hierarchy) {
+      throw new Error('PolygonGraphic has no polygon hierarchy')
+    }
+
+    const hierarchy = this.polygonEntity.polygon.hierarchy.getValue(Cesium.JulianDate.now())
+    const positions = hierarchy.positions || []
+
+    if (positions.length === 0) {
+      throw new Error('PolygonGraphic positions are empty')
+    }
+
+    // Calculate centroid (simple average of all vertices)
+    let sumX = 0, sumY = 0, sumZ = 0
+    positions.forEach((pos: Cesium.Cartesian3) => {
+      sumX += pos.x
+      sumY += pos.y
+      sumZ += pos.z
+    })
+
+    return new Cesium.Cartesian3(
+      sumX / positions.length,
+      sumY / positions.length,
+      sumZ / positions.length
+    )
+  }
+
   toGeoJSON(): any {
     if (this.positions.length < 3) {
       return null

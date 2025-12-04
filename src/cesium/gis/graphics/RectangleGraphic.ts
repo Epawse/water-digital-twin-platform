@@ -384,6 +384,21 @@ export class RectangleGraphic extends BaseGraphic {
   /**
    * 导出为 GeoJSON
    */
+  /**
+   * 获取图形中心点（矩形中心）
+   */
+  public getCenter(): Cesium.Cartesian3 {
+    if (!this.rectangleBounds) {
+      throw new Error('RectangleGraphic has no bounds')
+    }
+
+    // Calculate center of rectangle
+    const centerLon = (this.rectangleBounds.west + this.rectangleBounds.east) / 2
+    const centerLat = (this.rectangleBounds.south + this.rectangleBounds.north) / 2
+
+    return Cesium.Cartesian3.fromRadians(centerLon, centerLat, 0)
+  }
+
   toGeoJSON(): any {
     if (!this.rectangleBounds) {
       return null

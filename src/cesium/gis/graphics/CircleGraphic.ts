@@ -354,6 +354,16 @@ export class CircleGraphic extends BaseGraphic {
   /**
    * 导出为 GeoJSON
    */
+  /**
+   * 获取图形中心点（圆心）
+   */
+  public getCenter(): Cesium.Cartesian3 {
+    if (!this.centerPosition) {
+      throw new Error('CircleGraphic has no center position')
+    }
+    return this.centerPosition
+  }
+
   toGeoJSON(): any {
     if (!this.centerPosition) {
       return null

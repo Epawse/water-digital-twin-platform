@@ -186,6 +186,15 @@ export abstract class BaseGraphic {
    */
   public abstract toGeoJSON(): any
 
+  /**
+   * 获取图形中心点
+   * 子类实现获取几何中心的逻辑
+   *
+   * @abstract
+   * @returns 中心点位置（Cartesian3）
+   */
+  public abstract getCenter(): Cesium.Cartesian3
+
   // ========== 公共方法 ==========
 
   /**
