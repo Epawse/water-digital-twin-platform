@@ -143,13 +143,115 @@
             清空
           </button>
         </div>
+
+        <!-- Style Configuration Panel -->
+        <div v-if="gisStore.selectedCount > 0" class="style-panel">
+          <div class="style-header">
+            <i class="fa-solid fa-palette"></i>
+            <span>样式配置</span>
+            <span class="selected-count">{{ gisStore.selectedCount }} 个选中</span>
+          </div>
+
+          <div class="style-content">
+            <!-- Fill Color -->
+            <div class="style-row">
+              <label>填充颜色</label>
+              <div class="color-input-group">
+                <input
+                  type="color"
+                  v-model="styleConfig.fillColor"
+                  @input="applyStyleToSelected"
+                />
+                <span class="color-value">{{ styleConfig.fillColor }}</span>
+              </div>
+            </div>
+
+            <!-- Stroke Color -->
+            <div class="style-row">
+              <label>边框颜色</label>
+              <div class="color-input-group">
+                <input
+                  type="color"
+                  v-model="styleConfig.strokeColor"
+                  @input="applyStyleToSelected"
+                />
+                <span class="color-value">{{ styleConfig.strokeColor }}</span>
+              </div>
+            </div>
+
+            <!-- Fill Opacity -->
+            <div class="style-row">
+              <label>填充透明度</label>
+              <div class="slider-group">
+                <input
+                  type="range"
+                  v-model.number="styleConfig.fillOpacity"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  @input="applyStyleToSelected"
+                />
+                <span class="slider-value">{{ Math.round(styleConfig.fillOpacity * 100) }}%</span>
+              </div>
+            </div>
+
+            <!-- Stroke Width -->
+            <div class="style-row">
+              <label>边框宽度</label>
+              <div class="slider-group">
+                <input
+                  type="range"
+                  v-model.number="styleConfig.strokeWidth"
+                  min="1"
+                  max="10"
+                  step="1"
+                  @input="applyStyleToSelected"
+                />
+                <span class="slider-value">{{ styleConfig.strokeWidth }}px</span>
+              </div>
+            </div>
+
+            <!-- Point Size (for point features) -->
+            <div v-if="hasPointFeatureSelected" class="style-row">
+              <label>点大小</label>
+              <div class="slider-group">
+                <input
+                  type="range"
+                  v-model.number="styleConfig.pointSize"
+                  min="5"
+                  max="30"
+                  step="1"
+                  @input="applyStyleToSelected"
+                />
+                <span class="slider-value">{{ styleConfig.pointSize }}px</span>
+              </div>
+            </div>
+
+            <!-- Style Presets -->
+            <div class="style-presets">
+              <label>快速样式</label>
+              <div class="preset-buttons">
+                <button
+                  v-for="preset in stylePresets"
+                  :key="preset.name"
+                  class="preset-btn"
+                  :style="{ '--preset-color': preset.fillColor }"
+                  :title="preset.name"
+                  @click="applyPreset(preset)"
+                >
+                  <span class="preset-color" :style="{ background: preset.fillColor, borderColor: preset.strokeColor }"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </GlassPanel>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, reactive } from 'vue'
 import GlassPanel from '@/components/common/GlassPanel.vue'
 import { useGISStore } from '@/stores/gis'
 import type { DrawToolType } from '@/types/draw'
@@ -161,7 +263,92 @@ interface Layer {
   active: boolean
 }
 
+interface StyleConfig {
+  fillColor: string
+  strokeColor: string
+  fillOpacity: number
+  strokeWidth: number
+  pointSize: number
+}
+
+interface StylePreset {
+  name: string
+  fillColor: string
+  strokeColor: string
+  fillOpacity: number
+  strokeWidth: number
+}
+
 const gisStore = useGISStore()
+
+// === Style Configuration ===
+const styleConfig = reactive<StyleConfig>({
+  fillColor: '#22D3EE',
+  strokeColor: '#FFFFFF',
+  fillOpacity: 0.3,
+  strokeWidth: 2,
+  pointSize: 10
+})
+
+// Style presets
+const stylePresets: StylePreset[] = [
+  { name: '青色', fillColor: '#22D3EE', strokeColor: '#FFFFFF', fillOpacity: 0.3, strokeWidth: 2 },
+  { name: '红色', fillColor: '#EF4444', strokeColor: '#FFFFFF', fillOpacity: 0.3, strokeWidth: 2 },
+  { name: '绿色', fillColor: '#22C55E', strokeColor: '#FFFFFF', fillOpacity: 0.3, strokeWidth: 2 },
+  { name: '橙色', fillColor: '#F97316', strokeColor: '#FFFFFF', fillOpacity: 0.3, strokeWidth: 2 },
+  { name: '紫色', fillColor: '#A855F7', strokeColor: '#FFFFFF', fillOpacity: 0.3, strokeWidth: 2 },
+  { name: '蓝色', fillColor: '#3B82F6', strokeColor: '#FFFFFF', fillOpacity: 0.3, strokeWidth: 2 },
+]
+
+// Check if any selected feature is a point
+const hasPointFeatureSelected = computed(() => {
+  return gisStore.selectedFeatures.some(f => f.type === 'point')
+})
+
+// Load style from first selected feature when selection changes
+watch(() => gisStore.selectedFeatureIds.size, () => {
+  if (gisStore.selectedCount > 0) {
+    const firstSelectedId = Array.from(gisStore.selectedFeatureIds)[0]
+    const graphic = gisStore.graphics.get(firstSelectedId)
+    if (graphic && graphic.style) {
+      styleConfig.fillColor = graphic.style.fillColor || '#22D3EE'
+      styleConfig.strokeColor = graphic.style.strokeColor || '#FFFFFF'
+      styleConfig.fillOpacity = graphic.style.fillOpacity ?? 0.3
+      styleConfig.strokeWidth = graphic.style.strokeWidth || 2
+      styleConfig.pointSize = graphic.style.pointSize || 10
+    }
+  }
+})
+
+/**
+ * Apply current style config to all selected features
+ */
+function applyStyleToSelected() {
+  gisStore.selectedFeatureIds.forEach(featureId => {
+    const graphic = gisStore.graphics.get(featureId)
+    if (graphic) {
+      graphic.updateStyle({
+        fillColor: styleConfig.fillColor,
+        strokeColor: styleConfig.strokeColor,
+        fillOpacity: styleConfig.fillOpacity,
+        strokeWidth: styleConfig.strokeWidth,
+        pointSize: styleConfig.pointSize,
+        pointColor: styleConfig.fillColor // Use fill color for points
+      })
+    }
+  })
+}
+
+/**
+ * Apply a preset style
+ */
+function applyPreset(preset: StylePreset) {
+  styleConfig.fillColor = preset.fillColor
+  styleConfig.strokeColor = preset.strokeColor
+  styleConfig.fillOpacity = preset.fillOpacity
+  styleConfig.strokeWidth = preset.strokeWidth
+  applyStyleToSelected()
+}
 
 // Tab state
 const activeTab = ref<'resources' | 'features'>('resources')
@@ -759,6 +946,173 @@ function clearAllFeatures() {
     background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
     border-color: #ef4444;
+  }
+}
+
+// === Style Configuration Panel ===
+.style-panel {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 8px;
+}
+
+.style-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  color: $text-main;
+  font-size: 12px;
+  font-weight: 500;
+
+  i {
+    color: $neon-cyan;
+  }
+
+  .selected-count {
+    margin-left: auto;
+    color: $text-sub;
+    font-size: 11px;
+    font-weight: 400;
+  }
+}
+
+.style-content {
+  padding: 12px;
+}
+
+.style-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  label {
+    font-size: 11px;
+    color: $text-sub;
+    min-width: 70px;
+  }
+}
+
+.color-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  input[type="color"] {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+
+    &::-webkit-color-swatch-wrapper {
+      padding: 2px;
+    }
+
+    &::-webkit-color-swatch {
+      border: none;
+      border-radius: 2px;
+    }
+  }
+
+  .color-value {
+    font-size: 10px;
+    color: $text-sub;
+    font-family: monospace;
+    text-transform: uppercase;
+  }
+}
+
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 160px;
+
+  input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    outline: none;
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: $neon-cyan;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 5px $neon-cyan;
+    }
+
+    &::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: $neon-cyan;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 5px $neon-cyan;
+    }
+  }
+
+  .slider-value {
+    font-size: 10px;
+    color: $text-sub;
+    min-width: 35px;
+    text-align: right;
+    font-family: monospace;
+  }
+}
+
+.style-presets {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: $text-sub;
+    margin-bottom: 8px;
+  }
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  width: 28px;
+  height: 28px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+  }
+
+  .preset-color {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 2px;
+    border: 2px solid;
   }
 }
 </style>
