@@ -258,6 +258,64 @@
             </div>
           </div>
         </div>
+
+        <!-- Properties Panel (single selection only) -->
+        <div v-if="gisStore.selectedCount === 1" class="properties-panel">
+          <div class="properties-header">
+            <i class="fa-solid fa-info-circle"></i>
+            <span>要素属性</span>
+          </div>
+
+          <div class="properties-content">
+            <!-- Name Input -->
+            <div class="property-row">
+              <label>名称</label>
+              <input
+                type="text"
+                v-model="featureProps.name"
+                @input="updateFeatureProperty('name', featureProps.name)"
+                placeholder="输入要素名称"
+              />
+            </div>
+
+            <!-- Description Input -->
+            <div class="property-row">
+              <label>描述</label>
+              <textarea
+                v-model="featureProps.description"
+                @input="updateFeatureProperty('description', featureProps.description)"
+                placeholder="输入描述信息"
+                rows="2"
+              ></textarea>
+            </div>
+
+            <!-- Read-only Properties -->
+            <div class="property-divider"></div>
+
+            <div class="property-row readonly">
+              <label>类型</label>
+              <span class="property-value">{{ featureTypeLabel }}</span>
+            </div>
+
+            <div class="property-row readonly">
+              <label>创建时间</label>
+              <span class="property-value">{{ featureProps.createdAt }}</span>
+            </div>
+
+            <!-- Geometry Properties -->
+            <template v-if="geometryProps.length > 0">
+              <div class="property-divider"></div>
+              <div
+                v-for="prop in geometryProps"
+                :key="prop.label"
+                class="property-row readonly"
+              >
+                <label>{{ prop.label }}</label>
+                <span class="property-value">{{ prop.value }}</span>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
     </div>
   </GlassPanel>
@@ -361,6 +419,121 @@ function applyPreset(preset: StylePreset) {
   styleConfig.fillOpacity = preset.fillOpacity
   styleConfig.strokeWidth = preset.strokeWidth
   applyStyleToSelected()
+}
+
+// === Properties Panel ===
+const featureProps = reactive({
+  name: '',
+  description: '',
+  createdAt: ''
+})
+
+// Feature type labels
+const featureTypeLabels: Record<string, string> = {
+  point: '点标注',
+  line: '线路径',
+  polygon: '多边形',
+  circle: '圆形',
+  rectangle: '矩形',
+  distance: '距离测量',
+  area: '面积测量'
+}
+
+// Current feature type label
+const featureTypeLabel = computed(() => {
+  if (gisStore.selectedCount !== 1) return ''
+  const feature = gisStore.selectedFeatures[0]
+  return feature ? featureTypeLabels[feature.type] || feature.type : ''
+})
+
+// Geometry-specific properties
+const geometryProps = computed(() => {
+  if (gisStore.selectedCount !== 1) return []
+  const feature = gisStore.selectedFeatures[0]
+  if (!feature) return []
+
+  const props: { label: string; value: string }[] = []
+
+  switch (feature.type) {
+    case 'line':
+      if (feature.length) {
+        props.push({ label: '长度', value: formatLength(feature.length) })
+      }
+      props.push({ label: '顶点数', value: `${feature.vertices?.length || 0} 个` })
+      break
+    case 'polygon':
+    case 'area':
+      if (feature.area) {
+        props.push({ label: '面积', value: formatArea(feature.area) })
+      }
+      if (feature.type === 'polygon' && (feature as any).perimeter) {
+        props.push({ label: '周长', value: formatLength((feature as any).perimeter) })
+      }
+      props.push({ label: '顶点数', value: `${feature.vertices?.length || 0} 个` })
+      break
+    case 'circle':
+      if (feature.radius) {
+        props.push({ label: '半径', value: formatLength(feature.radius) })
+      }
+      if (feature.area) {
+        props.push({ label: '面积', value: formatArea(feature.area) })
+      }
+      break
+    case 'rectangle':
+      if (feature.width && feature.height) {
+        props.push({ label: '尺寸', value: `${formatLength(feature.width)} × ${formatLength(feature.height)}` })
+      }
+      if (feature.area) {
+        props.push({ label: '面积', value: formatArea(feature.area) })
+      }
+      break
+    case 'distance':
+      if (feature.distance) {
+        props.push({ label: '距离', value: formatLength(feature.distance) })
+      }
+      break
+  }
+
+  return props
+})
+
+// Format length value
+function formatLength(meters: number): string {
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(2)} km`
+  }
+  return `${meters.toFixed(1)} m`
+}
+
+// Format area value
+function formatArea(sqMeters: number): string {
+  if (sqMeters >= 1000000) {
+    return `${(sqMeters / 1000000).toFixed(2)} km²`
+  }
+  return `${sqMeters.toFixed(0)} m²`
+}
+
+// Load properties when selection changes
+watch(() => gisStore.selectedFeatureIds.size, () => {
+  if (gisStore.selectedCount === 1) {
+    const feature = gisStore.selectedFeatures[0]
+    if (feature) {
+      featureProps.name = feature.name || ''
+      featureProps.description = feature.description || ''
+      featureProps.createdAt = feature.createdAt
+        ? new Date(feature.createdAt).toLocaleString()
+        : ''
+    }
+  }
+}, { immediate: true })
+
+/**
+ * Update feature property in store
+ */
+function updateFeatureProperty(key: 'name' | 'description', value: string) {
+  if (gisStore.selectedCount !== 1) return
+  const featureId = Array.from(gisStore.selectedFeatureIds)[0]
+  gisStore.updateFeature(featureId, { [key]: value })
 }
 
 // Tab state
@@ -1174,5 +1347,91 @@ function clearAllFeatures() {
     border-radius: 2px;
     border: 2px solid;
   }
+}
+
+// === Properties Panel ===
+.properties-panel {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 8px;
+}
+
+.properties-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  color: $text-main;
+  font-size: 12px;
+  font-weight: 500;
+
+  i {
+    color: $neon-cyan;
+  }
+}
+
+.properties-content {
+  padding: 12px;
+}
+
+.property-row {
+  margin-bottom: 10px;
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: $text-sub;
+    margin-bottom: 4px;
+  }
+
+  input[type="text"],
+  textarea {
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: $text-main;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+
+    &:focus {
+      border-color: $neon-cyan;
+    }
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  textarea {
+    font-family: inherit;
+  }
+
+  &.readonly {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+
+    label {
+      margin-bottom: 0;
+      min-width: 60px;
+    }
+
+    .property-value {
+      font-size: 11px;
+      color: $text-main;
+      text-align: right;
+    }
+  }
+}
+
+.property-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 12px 0;
 }
 </style>
