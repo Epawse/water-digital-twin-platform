@@ -2,12 +2,12 @@
 
 ## Current Goal
 
-**Phase 0-1, 7, 8, 9 completed (~31/89 tasks = 35%)**. Selection features are now functional.
+**Phase 0-1, 7, 8, 9, 10 completed (~35/89 tasks = 39%)**. Feature movement is now functional.
 
 Next priority options:
 - **Phase 2-6**: Enhance drawing tools (real-time measurements, style config)
-- **Phase 10**: Feature movement (drag to move)
 - **Phase 11**: Vertex editing
+- **Phase 12**: Style configuration panel
 
 ---
 
@@ -93,6 +93,32 @@ Next priority options:
    - Ctrl+Click: Toggle selection (`toggleSelection()`)
    - Normal click: Single selection (clear others)
    - Click empty space: Deselect all (unless Ctrl held)
+
+### Feature Movement Implementation (2025-12-05)
+**Phase 10 completed** - Drag-to-move for all feature types
+
+**Implementation**:
+1. **BaseGraphic Abstract Methods**
+   - Added `move(offset: Cartesian3)` abstract method
+   - Added `getPositions()` abstract method
+   - All Graphic subclasses implement both methods
+
+2. **Graphic Movement Logic**
+   - PointGraphic: Single position update via `updatePosition()`
+   - LineGraphic: All vertices offset via `updatePositions()`
+   - PolygonGraphic: All vertices offset via `updatePositions()`
+   - CircleGraphic: Center moved, radius preserved (recreates entity)
+   - RectangleGraphic: Both corners offset (recreates entity)
+
+3. **Drag Interaction in GISLayer.vue**
+   - LEFT_DOWN: Start drag on selected feature, disable camera controls
+   - MOUSE_MOVE: Calculate offset, move all selected features
+   - LEFT_UP: Re-enable camera, sync geometry to store
+   - `updateFeatureGeometry()` converts positions back to GeoJSON
+
+4. **Multi-Feature Drag**
+   - All selected features move together
+   - Offset calculated incrementally (from last position)
 
 ---
 
@@ -193,17 +219,22 @@ Next priority options:
 - [x] T9.4: Batch actions - Export, select all, clear all
 - [x] T9.5: Layout integration - Mounted in LayerControl
 
-### 🔲 Phase 10-17: Advanced Features (0/35 tasks)
-- [ ] Phase 10: Feature movement (3 tasks)
+### ✅ Phase 10: Feature Movement (4/4 tasks)
+- [x] T10.1: Drag detection (LEFT_DOWN/MOUSE_MOVE/LEFT_UP)
+- [x] T10.2: Point feature movement
+- [x] T10.3: Line/polygon feature movement
+- [x] T10.4: Store update after movement
+
+### 🔲 Phase 11-17: Advanced Features (0/31 tasks)
 - [ ] Phase 11: Vertex editing (5 tasks)
-- [ ] Phase 12: Style panel (5 tasks)
+- [ ] Phase 12: Style panel (6 tasks)
 - [ ] Phase 13: Properties panel (4 tasks)
-- [ ] Phase 14: GeoJSON import/export (4 tasks)
+- [ ] Phase 14: GeoJSON import/export (5 tasks)
 - [ ] Phase 15: Snap functionality (4 tasks)
 - [ ] Phase 16: Undo/Redo (4 tasks)
-- [ ] Phase 17: Integration & optimization (9 tasks)
+- [ ] Phase 17: Integration & optimization (4 tasks)
 
-**Total Progress**: ~31/89 tasks (35%)
+**Total Progress**: ~35/89 tasks (39%)
 
 ---
 

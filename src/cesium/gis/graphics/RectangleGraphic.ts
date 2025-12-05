@@ -400,6 +400,49 @@ export class RectangleGraphic extends BaseGraphic {
   }
 
   /**
+   * 获取所有顶点位置（四个角点）
+   */
+  public getPositions(): Cesium.Cartesian3[] | null {
+    if (!this.rectangleBounds) return null
+
+    const ellipsoid = this.viewer.scene.globe.ellipsoid
+    return [
+      ellipsoid.cartographicToCartesian(
+        new Cesium.Cartographic(this.rectangleBounds.west, this.rectangleBounds.south)
+      ),
+      ellipsoid.cartographicToCartesian(
+        new Cesium.Cartographic(this.rectangleBounds.east, this.rectangleBounds.north)
+      )
+    ]
+  }
+
+  /**
+   * 移动图形
+   * @param offset - 偏移向量
+   */
+  public move(offset: Cesium.Cartesian3): void {
+    if (!this.rectangleBounds) return
+
+    const ellipsoid = this.viewer.scene.globe.ellipsoid
+
+    // Get current corner positions
+    const sw = ellipsoid.cartographicToCartesian(
+      new Cesium.Cartographic(this.rectangleBounds.west, this.rectangleBounds.south)
+    )
+    const ne = ellipsoid.cartographicToCartesian(
+      new Cesium.Cartographic(this.rectangleBounds.east, this.rectangleBounds.north)
+    )
+
+    // Apply offset to corners
+    const newSW = Cesium.Cartesian3.add(sw, offset, new Cesium.Cartesian3())
+    const newNE = Cesium.Cartesian3.add(ne, offset, new Cesium.Cartesian3())
+
+    // Recreate with new positions
+    this.remove()
+    this.create([newSW, newNE])
+  }
+
+  /**
    * 应用样式到实体
    * 覆盖基类方法以支持高亮效果
    */

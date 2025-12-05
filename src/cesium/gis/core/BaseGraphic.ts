@@ -204,6 +204,24 @@ export abstract class BaseGraphic {
    */
   public abstract getCenter(): Cesium.Cartesian3
 
+  /**
+   * 移动图形
+   * 子类实现具体的移动逻辑（更新所有顶点位置）
+   *
+   * @abstract
+   * @param offset - 偏移向量（Cartesian3）
+   */
+  public abstract move(offset: Cesium.Cartesian3): void
+
+  /**
+   * 获取所有顶点位置
+   * 子类实现获取顶点坐标的逻辑
+   *
+   * @abstract
+   * @returns 顶点位置数组
+   */
+  public abstract getPositions(): Cesium.Cartesian3[] | null
+
   // ========== 公共方法 ==========
 
   /**

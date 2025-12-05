@@ -265,6 +265,21 @@ export class PolygonGraphic extends BaseGraphic {
   }
 
   /**
+   * 移动图形
+   * @param offset - 偏移向量
+   */
+  public move(offset: Cesium.Cartesian3): void {
+    if (this.positions.length === 0) return
+
+    // Apply offset to all vertices
+    const newPositions = this.positions.map(pos =>
+      Cesium.Cartesian3.add(pos, offset, new Cesium.Cartesian3())
+    )
+
+    this.updatePositions(newPositions)
+  }
+
+  /**
    * 更新多边形顶点
    */
   updatePositions(positions: Cesium.Cartesian3[]): void {

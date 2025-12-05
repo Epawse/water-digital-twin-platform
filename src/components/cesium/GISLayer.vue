@@ -29,6 +29,11 @@ let selectionHandler: any = null
 // Track Ctrl key state
 let isCtrlPressed = false
 
+// ========== Drag State ==========
+let isDragging = false
+let dragFeatureId: string | null = null
+let dragStartPosition: any = null  // Cartesian3
+
 onMounted(() => {
   // Set viewer in GIS store
   if (cesiumStore.viewer) {
@@ -42,7 +47,7 @@ onUnmounted(() => {
 })
 
 /**
- * Setup map click handler for feature selection
+ * Setup map click handler for feature selection and drag
  */
 function setupSelectionHandler() {
   const viewer = cesiumStore.viewer
@@ -70,28 +75,95 @@ function setupSelectionHandler() {
     document.removeEventListener('keyup', handleKeyUp)
   }
 
-  // LEFT_CLICK for selection
+  // LEFT_DOWN for drag start
   selectionHandler.setInputAction((event: any) => {
+    // Skip when drawing tool is active
+    if (gisStore.isDrawing || gisStore.toolType) return
+
+    const pickedObject = viewer.scene.pick(event.position)
+
+    if (Cesium.defined(pickedObject) && pickedObject.id) {
+      const featureId = getFeatureIdFromEntity(pickedObject.id)
+
+      // Only start drag if clicking on a selected feature
+      if (featureId && gisStore.selectedFeatureIds.has(featureId)) {
+        isDragging = true
+        dragFeatureId = featureId
+        dragStartPosition = viewer.scene.pickPosition(event.position)
+
+        // Disable camera controls during drag
+        viewer.scene.screenSpaceCameraController.enableRotate = false
+        viewer.scene.screenSpaceCameraController.enableTranslate = false
+        viewer.scene.screenSpaceCameraController.enableZoom = false
+        viewer.scene.screenSpaceCameraController.enableTilt = false
+        viewer.scene.screenSpaceCameraController.enableLook = false
+      }
+    }
+  }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
+
+  // MOUSE_MOVE for drag
+  selectionHandler.setInputAction((event: any) => {
+    if (!isDragging || !dragFeatureId || !dragStartPosition) return
+
+    const currentPosition = viewer.scene.pickPosition(event.endPosition)
+    if (!Cesium.defined(currentPosition)) return
+
+    // Calculate offset
+    const offset = Cesium.Cartesian3.subtract(
+      currentPosition,
+      dragStartPosition,
+      new Cesium.Cartesian3()
+    )
+
+    // Move all selected features
+    gisStore.selectedFeatureIds.forEach(featureId => {
+      const graphic = gisStore.graphics.get(featureId)
+      if (graphic && graphic.move) {
+        graphic.move(offset)
+      }
+    })
+
+    // Update drag start position for next move
+    dragStartPosition = currentPosition
+  }, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
+
+  // LEFT_UP for drag end and selection
+  selectionHandler.setInputAction((event: any) => {
+    const wasDragging = isDragging
+
+    // Re-enable camera controls
+    viewer.scene.screenSpaceCameraController.enableRotate = true
+    viewer.scene.screenSpaceCameraController.enableTranslate = true
+    viewer.scene.screenSpaceCameraController.enableZoom = true
+    viewer.scene.screenSpaceCameraController.enableTilt = true
+    viewer.scene.screenSpaceCameraController.enableLook = true
+
+    if (wasDragging) {
+      // Update feature geometry in store after drag
+      gisStore.selectedFeatureIds.forEach(featureId => {
+        const graphic = gisStore.graphics.get(featureId)
+        const feature = gisStore.features.get(featureId)
+        if (graphic && feature) {
+          // Update feature geometry from graphic positions
+          updateFeatureGeometry(featureId, graphic)
+        }
+      })
+
+      // Reset drag state
+      isDragging = false
+      dragFeatureId = null
+      dragStartPosition = null
+      return
+    }
+
+    // If not dragging, handle as selection click
     // Skip selection when drawing tool is active
     if (gisStore.isDrawing || gisStore.toolType) return
 
     const pickedObject = viewer.scene.pick(event.position)
 
     if (Cesium.defined(pickedObject) && pickedObject.id) {
-      const entity = pickedObject.id
-
-      // Try to get featureId from entity properties
-      let featureId: string | null = null
-
-      if (entity.properties && entity.properties.featureId) {
-        const prop = entity.properties.featureId
-        featureId = prop.getValue ? prop.getValue(Cesium.JulianDate.now()) : prop
-      }
-
-      // Fallback: try entity.id
-      if (!featureId && typeof entity.id === 'string') {
-        featureId = entity.id
-      }
+      const featureId = getFeatureIdFromEntity(pickedObject.id)
 
       if (featureId && gisStore.features.has(featureId)) {
         if (isCtrlPressed) {
@@ -112,7 +184,89 @@ function setupSelectionHandler() {
         applySelectionHighlights()
       }
     }
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+    // Reset drag state
+    isDragging = false
+    dragFeatureId = null
+    dragStartPosition = null
+  }, Cesium.ScreenSpaceEventType.LEFT_UP)
+}
+
+/**
+ * Extract featureId from entity
+ */
+function getFeatureIdFromEntity(entity: any): string | null {
+  let featureId: string | null = null
+
+  if (entity.properties && entity.properties.featureId) {
+    const prop = entity.properties.featureId
+    featureId = prop.getValue ? prop.getValue(Cesium.JulianDate.now()) : prop
+  }
+
+  // Fallback: try entity.id
+  if (!featureId && typeof entity.id === 'string') {
+    featureId = entity.id
+  }
+
+  return featureId
+}
+
+/**
+ * Update feature geometry from graphic positions after move
+ */
+function updateFeatureGeometry(featureId: string, graphic: any) {
+  const feature = gisStore.features.get(featureId)
+  if (!feature) return
+
+  const positions = graphic.getPositions()
+  if (!positions || positions.length === 0) return
+
+  // Convert positions to GeoJSON coordinates
+  const coordinates = positions.map((pos: any) => {
+    const cartographic = Cesium.Cartographic.fromCartesian(pos)
+    return [
+      Cesium.Math.toDegrees(cartographic.longitude),
+      Cesium.Math.toDegrees(cartographic.latitude),
+      cartographic.height
+    ]
+  })
+
+  // Update geometry based on feature type
+  switch (feature.type) {
+    case 'point':
+      feature.geometry.coordinates = coordinates[0]
+      break
+    case 'line':
+      feature.geometry.coordinates = coordinates
+      break
+    case 'polygon':
+      // Close polygon ring
+      feature.geometry.coordinates = [[...coordinates, coordinates[0]]]
+      break
+    case 'circle':
+      // Circle: store center and recalculate radius
+      feature.geometry.coordinates = coordinates[0]
+      if (graphic.getRadius) {
+        feature.properties = feature.properties || {}
+        feature.properties.radius = graphic.getRadius()
+      }
+      break
+    case 'rectangle':
+      // Rectangle: store as polygon
+      const sw = coordinates[0]
+      const ne = coordinates[1]
+      feature.geometry.coordinates = [[
+        [sw[0], ne[1]], // NW
+        [ne[0], ne[1]], // NE
+        [ne[0], sw[1]], // SE
+        [sw[0], sw[1]], // SW
+        [sw[0], ne[1]]  // Close
+      ]]
+      break
+  }
+
+  // Update timestamp
+  gisStore.updateFeature(featureId, { updatedAt: new Date() })
 }
 
 /**

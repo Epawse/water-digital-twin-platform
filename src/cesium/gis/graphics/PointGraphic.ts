@@ -229,7 +229,7 @@ export class PointGraphic extends BaseGraphic {
   public getPosition(): Cesium.Cartesian3 | null {
     if (!this.pointEntity || !this.pointEntity.position) return null
 
-    return this.pointEntity.position.getValue(Cesium.JulianDate.now())
+    return this.pointEntity.position.getValue(Cesium.JulianDate.now()) || null
   }
 
   /**
@@ -256,6 +256,26 @@ export class PointGraphic extends BaseGraphic {
       latitude: Cesium.Math.toDegrees(cartographic.latitude),
       height: cartographic.height
     }
+  }
+
+  /**
+   * 获取所有顶点位置（点图形只有一个顶点）
+   */
+  public getPositions(): Cesium.Cartesian3[] | null {
+    const position = this.getPosition()
+    return position ? [position] : null
+  }
+
+  /**
+   * 移动图形
+   * @param offset - 偏移向量
+   */
+  public move(offset: Cesium.Cartesian3): void {
+    const currentPosition = this.getPosition()
+    if (!currentPosition) return
+
+    const newPosition = Cesium.Cartesian3.add(currentPosition, offset, new Cesium.Cartesian3())
+    this.updatePosition(newPosition)
   }
 
   /**

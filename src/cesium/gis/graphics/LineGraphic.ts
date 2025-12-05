@@ -409,6 +409,22 @@ export class LineGraphic extends BaseGraphic {
   }
 
   /**
+   * 移动图形
+   * @param offset - 偏移向量
+   */
+  public move(offset: Cesium.Cartesian3): void {
+    const positions = this.getPositions()
+    if (!positions || positions.length === 0) return
+
+    // Apply offset to all vertices
+    const newPositions = positions.map(pos =>
+      Cesium.Cartesian3.add(pos, offset, new Cesium.Cartesian3())
+    )
+
+    this.updatePositions(newPositions)
+  }
+
+  /**
    * 应用样式到实体
    * 覆盖基类方法以支持高亮效果
    */

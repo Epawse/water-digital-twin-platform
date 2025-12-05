@@ -365,6 +365,50 @@ export class CircleGraphic extends BaseGraphic {
   }
 
   /**
+   * 获取所有顶点位置（圆形返回圆心和一个边界点）
+   */
+  public getPositions(): Cesium.Cartesian3[] | null {
+    if (!this.centerPosition) return null
+
+    // Calculate edge point (east direction)
+    const ellipsoid = this.viewer.scene.globe.ellipsoid
+    const centerCartographic = ellipsoid.cartesianToCartographic(this.centerPosition)
+    const edgeCartographic = new Cesium.Cartographic(
+      centerCartographic.longitude + this.radius / ellipsoid.maximumRadius,
+      centerCartographic.latitude,
+      centerCartographic.height
+    )
+    const edgePosition = ellipsoid.cartographicToCartesian(edgeCartographic)
+
+    return [this.centerPosition, edgePosition]
+  }
+
+  /**
+   * 移动图形
+   * @param offset - 偏移向量
+   */
+  public move(offset: Cesium.Cartesian3): void {
+    if (!this.centerPosition) return
+
+    // Calculate new center position
+    const newCenter = Cesium.Cartesian3.add(this.centerPosition, offset, new Cesium.Cartesian3())
+
+    // Calculate new edge point (east direction at same radius)
+    const ellipsoid = this.viewer.scene.globe.ellipsoid
+    const newCenterCartographic = ellipsoid.cartesianToCartographic(newCenter)
+    const newEdgeCartographic = new Cesium.Cartographic(
+      newCenterCartographic.longitude + this.radius / ellipsoid.maximumRadius,
+      newCenterCartographic.latitude,
+      newCenterCartographic.height
+    )
+    const newEdgePosition = ellipsoid.cartographicToCartesian(newEdgeCartographic)
+
+    // Recreate with new positions
+    this.remove()
+    this.create([newCenter, newEdgePosition])
+  }
+
+  /**
    * 应用样式到实体
    * 覆盖基类方法以支持高亮效果
    */

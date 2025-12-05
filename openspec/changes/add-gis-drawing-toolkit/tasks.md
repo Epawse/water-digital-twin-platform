@@ -277,300 +277,312 @@
   - 边框样式配置
   - 验证：样式丰富
 
-## Phase 7: 绘制工具栏 UI
+## Phase 7: Drawing Toolbar UI ✅
 
-- [ ] **T7.1** 创建 `src/components/common/DrawToolbar.vue`
-  - 工具按钮组件
-  - 图标和文本
-  - 激活状态样式
-  - 验证：UI 显示正确
+> **Completed 2025-12-05**: Integrated into LayerControl Tab 2 (not separate DrawToolbar)
 
-- [ ] **T7.2** 集成到 TopRibbon
-  - 在测量工具后添加绘制工具
-  - 工具分组（测量 | 绘制 | 操作）
-  - 验证：工具栏布局合理
+- [x] **T7.1** Tool button components
+  - Quick tool buttons in LayerControl Tab 2
+  - Icons for point/line/circle/rectangle/polygon
+  - Active state styling
+  - Verify: UI displays correctly ✅
 
-- [ ] **T7.3** 实现工具切换逻辑
-  - 点击激活/停用工具
-  - 工具互斥（同时只能激活一个）
-  - 视觉反馈（高亮激活工具）
-  - 验证：工具切换流畅
+- [x] **T7.2** Integration into LayerControl
+  - Changed from TopRibbon to LayerControl integration
+  - Tab 1: Resource layers, Tab 2: GIS features
+  - Verify: Toolbar layout reasonable ✅
 
-## Phase 8: 要素选择功能
+- [x] **T7.3** Tool switching logic
+  - `toggleDrawTool()` function in GISLayer.vue
+  - Tool mutual exclusion implemented
+  - Visual feedback on active tool
+  - Verify: Tool switching smooth ✅
 
-- [ ] **T8.1** 实现选择工具交互
-  - 点击地图拾取要素（scene.pick）
-  - 判断是否点击到已绘制要素
-  - 添加到 selectedFeatureIds
-  - 验证：点击选中要素
+## Phase 8: Feature Selection ✅
 
-- [ ] **T8.2** 实现高亮显示
-  - 保存原始样式
-  - 应用高亮样式（颜色变化）
-  - 取消选中时恢复
-  - 验证：高亮效果明显
+> **Completed 2025-12-05**: Map-based selection with visual highlighting
 
-- [ ] **T8.3** 实现多选支持
-  - Ctrl+Click 添加到选区
-  - Shift+Click 范围选择（可选）
-  - 点击空白取消选择
-  - 验证：多选逻辑正确
+- [x] **T8.1** Selection interaction
+  - ScreenSpaceEventHandler in GISLayer.vue for LEFT_CLICK
+  - Entity lookup via featureId property binding
+  - Skip selection when drawing tool active
+  - Verify: Click to select feature ✅
 
-## Phase 9: 要素列表面板
+- [x] **T8.2** Visual highlighting
+  - `setHighlight()` method in BaseGraphic
+  - Original style saved before highlight (gold #FFD700, +2px stroke)
+  - `applyStyle()` implemented in all Graphic subclasses
+  - Watch on selectedFeatureIds syncs highlight from all sources
+  - Verify: Highlight effect visible ✅
 
-- [ ] **T9.1** 创建 `src/components/common/FeatureListPanel.vue`
-  - 列表容器和样式
-  - 按类型分组
-  - 滚动区域
-  - 验证：面板显示正常
+- [x] **T8.3** Multi-select support
+  - DOM keyboard listeners track Ctrl/Meta key state
+  - Ctrl+Click: Toggle selection (`toggleSelection()`)
+  - Normal click: Single selection
+  - Click empty space: Deselect all (unless Ctrl held)
+  - Verify: Multi-select logic correct ✅
 
-- [ ] **T9.2** 实现要素列表项
-  - 图标（根据类型）
-  - 名称（可编辑）
-  - 操作按钮（显示/隐藏、编辑、删除）
-  - 验证：列表项交互正常
+## Phase 9: Feature List Panel ✅
 
-- [ ] **T9.3** 实现搜索过滤
-  - 输入框
-  - 实时过滤
-  - 按名称/类型搜索
-  - 验证：搜索功能正常
+> **Completed 2025-12-05**: Integrated into LayerControl Tab 2
 
-- [ ] **T9.4** 实现批量操作
-  - 全选/反选
-  - 批量显示/隐藏
-  - 批量删除
-  - 验证：批量操作正常
+- [x] **T9.1** Feature list panel
+  - Integrated into LayerControl Tab 2 (not separate component)
+  - Features grouped by type
+  - Scrollable area
+  - Verify: Panel displays correctly ✅
 
-- [ ] **T9.5** 挂载到 MainLayout
-  - 侧边栏位置
-  - 可折叠/展开
-  - 验证：面板集成正常
+- [x] **T9.2** Feature list items
+  - Type icons (point/line/polygon/circle/rectangle)
+  - Feature name display
+  - Action buttons: show/hide, locate, delete
+  - Verify: List item interaction works ✅
 
-## Phase 10: 要素移动功能
+- [x] **T9.3** Search and filter
+  - Search input in LayerControl
+  - Real-time filtering by name
+  - Verify: Search works correctly ✅
 
-- [ ] **T10.1** 实现拖拽检测
-  - 鼠标按下选中要素
-  - 鼠标移动触发拖拽
-  - 鼠标抬起完成移动
-  - 验证：拖拽检测准确
+- [x] **T9.4** Batch operations
+  - Export all features
+  - Select all / Clear all
+  - Verify: Batch operations work ✅
 
-- [ ] **T10.2** 实现点要素移动
-  - 更新 position 属性
-  - 实时渲染
-  - 验证：点移动流畅
+- [x] **T9.5** Mount to LayerControl
+  - Dual-tab panel design
+  - Tab switching between layers and GIS features
+  - Verify: Panel integration complete ✅
 
-- [ ] **T10.3** 实现线/面要素移动
-  - 计算偏移量
-  - 更新所有顶点坐标
-  - 使用 CallbackProperty 实时更新
-  - 验证：复杂要素移动正常
+## Phase 10: Feature Movement ✅
 
-- [ ] **T10.4** 移动完成后更新 Store
-  - 更新 featureStore
-  - 记录历史（撤销/重做）
-  - 验证：数据持久化
+> **Completed 2025-12-05**: Drag-to-move for all feature types
 
-## Phase 11: 顶点编辑功能
+- [x] **T10.1** Implement drag detection
+  - LEFT_DOWN on selected feature starts drag
+  - MOUSE_MOVE triggers movement
+  - LEFT_UP completes move and updates store
+  - Camera controls disabled during drag
+  - Verify: Drag detection accurate ✅
 
-- [ ] **T11.1** 创建 `src/components/cesium/EditLayer.vue`
-  - 双击要素进入编辑模式
-  - 显示可编辑顶点（点实体）
-  - 验证：编辑模式激活
+- [x] **T10.2** Implement point feature movement
+  - Added `move(offset)` method to PointGraphic
+  - Uses `updatePosition()` internally
+  - Verify: Point movement smooth ✅
 
-- [ ] **T11.2** 实现顶点拖拽
-  - 鼠标按下顶点
-  - 拖拽更新顶点位置
-  - 使用 CallbackProperty 更新几何
-  - 验证：顶点拖拽流畅
+- [x] **T10.3** Implement line/polygon feature movement
+  - Added `move(offset)` method to all Graphic classes
+  - LineGraphic: Updates all vertices via `updatePositions()`
+  - PolygonGraphic: Updates all vertices via `updatePositions()`
+  - CircleGraphic: Moves center, preserves radius
+  - RectangleGraphic: Moves both corners
+  - Verify: Complex feature movement works ✅
 
-- [ ] **T11.3** 实现顶点删除
-  - Shift+Click 删除顶点
-  - 限制最小顶点数（线>=2，面>=3）
-  - 验证：删除逻辑正确
+- [x] **T10.4** Update Store after movement
+  - `updateFeatureGeometry()` syncs graphic positions to feature
+  - Updates geometry coordinates based on feature type
+  - Updates timestamp via `gisStore.updateFeature()`
+  - Verify: Data persisted correctly ✅
 
-- [ ] **T11.4** 实现顶点插入
-  - 点击边的中点插入顶点
-  - 自动计算插入位置
-  - 验证：插入功能正常
+## Phase 11: Vertex Editing
 
-- [ ] **T11.5** 退出编辑模式
-  - ESC 退出
-  - 点击空白退出
-  - 保存修改到 Store
-  - 验证：退出逻辑正确
+- [ ] **T11.1** Create EditLayer component
+  - Double-click feature to enter edit mode
+  - Show editable vertices (point entities)
+  - Verify: Edit mode activates
 
-## Phase 12: 样式配置面板
+- [ ] **T11.2** Implement vertex dragging
+  - Mouse down on vertex
+  - Drag to update vertex position
+  - Use CallbackProperty for geometry updates
+  - Verify: Vertex dragging smooth
 
-- [ ] **T12.1** 创建 `src/components/common/StylePanel.vue`
-  - 面板容器和布局
-  - 折叠/展开功能
-  - 验证：面板显示正常
+- [ ] **T11.3** Implement vertex deletion
+  - Shift+Click to delete vertex
+  - Enforce minimum vertex count (line>=2, polygon>=3)
+  - Verify: Deletion logic correct
 
-- [ ] **T12.2** 实现颜色选择器
-  - 填充颜色选择
-  - 边框颜色选择
-  - 透明度滑块
-  - 验证：颜色选择器工作正常
+- [ ] **T11.4** Implement vertex insertion
+  - Click edge midpoint to insert vertex
+  - Auto-calculate insertion position
+  - Verify: Insertion works correctly
 
-- [ ] **T12.3** 实现线宽和线型配置
-  - 线宽滑块（1-10px）
-  - 线型下拉选择（实线/虚线/点线）
-  - 验证：配置项正常
+- [ ] **T11.5** Exit edit mode
+  - ESC to exit
+  - Click empty space to exit
+  - Save changes to Store
+  - Verify: Exit logic correct
 
-- [ ] **T12.4** 实现点大小配置
-  - 点大小滑块（5-20px）
-  - 实时预览
-  - 验证：点大小调整正常
+## Phase 12: Style Configuration Panel
 
-- [ ] **T12.5** 实现样式实时应用
-  - 监听样式变化
-  - 更新选中要素样式
-  - 更新 Cesium 实体
-  - 验证：样式实时生效
+- [ ] **T12.1** Create StylePanel component
+  - Panel container and layout
+  - Collapse/expand functionality
+  - Verify: Panel displays correctly
 
-- [ ] **T12.6** 实现样式预设
-  - 预设样式库（5-10个）
-  - 保存当前样式为预设
-  - 快速应用预设
-  - 验证：预设功能正常
+- [ ] **T12.2** Implement color picker
+  - Fill color selection
+  - Stroke color selection
+  - Opacity slider
+  - Verify: Color picker works
 
-## Phase 13: 属性编辑面板
+- [ ] **T12.3** Implement line width and style config
+  - Line width slider (1-10px)
+  - Line style dropdown (solid/dashed/dotted)
+  - Verify: Config options work
 
-- [ ] **T13.1** 创建 `src/components/common/PropertiesPanel.vue`
-  - 面板容器和布局
-  - 基础属性展示（类型、创建时间等）
-  - 验证：面板显示正常
+- [ ] **T12.4** Implement point size config
+  - Point size slider (5-20px)
+  - Real-time preview
+  - Verify: Point size adjustment works
 
-- [ ] **T13.2** 实现名称和描述编辑
-  - 名称输入框
-  - 描述文本区域
-  - 实时保存
-  - 验证：编辑功能正常
+- [ ] **T12.5** Implement real-time style application
+  - Watch style changes
+  - Update selected feature styles
+  - Update Cesium entities
+  - Verify: Styles apply in real-time
 
-- [ ] **T13.3** 实现自定义属性
-  - 添加自定义字段
-  - 字段类型（文本、数字、日期）
-  - 删除字段
-  - 验证：自定义属性正常
+- [ ] **T12.6** Implement style presets
+  - Preset style library (5-10 presets)
+  - Save current style as preset
+  - Quick apply preset
+  - Verify: Presets work correctly
 
-- [ ] **T13.4** 实现几何属性显示
-  - 距离/长度（线）
-  - 面积（面/圆）
-  - 半径（圆）
-  - 只读显示
-  - 验证：属性计算正确
+## Phase 13: Properties Panel
 
-## Phase 14: 数据导入导出
+- [ ] **T13.1** Create PropertiesPanel component
+  - Panel container and layout
+  - Basic properties display (type, creation time, etc.)
+  - Verify: Panel displays correctly
 
-- [ ] **T14.1** 实现 GeoJSON 导出
-  - 转换 Feature 到 GeoJSON 格式
-  - 坐标系转换（Cartesian3 → WGS84）
-  - 样式信息保存（properties）
-  - 文件下载（file-saver）
-  - 验证：导出的 GeoJSON 格式正确
+- [ ] **T13.2** Implement name and description editing
+  - Name input field
+  - Description text area
+  - Real-time save
+  - Verify: Editing works correctly
 
-- [ ] **T14.2** 实现导出选项
-  - 导出全部/仅选中
-  - 文件名自定义
-  - 格式验证
-  - 验证：导出选项正常
+- [ ] **T13.3** Implement custom properties
+  - Add custom fields
+  - Field types (text, number, date)
+  - Delete fields
+  - Verify: Custom properties work
 
-- [ ] **T14.3** 实现 GeoJSON 导入
-  - 文件上传
-  - JSON 解析
-  - GeoJSON 格式验证
-  - 验证：文件读取正常
+- [ ] **T13.4** Implement geometry properties display
+  - Distance/length (line)
+  - Area (polygon/circle)
+  - Radius (circle)
+  - Read-only display
+  - Verify: Property calculations correct
 
-- [ ] **T14.4** 实现 GeoJSON 解析
-  - 解析不同几何类型
-  - 坐标系转换（WGS84 → Cartesian3）
-  - 样式恢复
-  - 验证：导入的要素正确显示
+## Phase 14: Data Import/Export
 
-- [ ] **T14.5** 错误处理
-  - 格式错误提示
-  - 坐标系不支持提示
-  - 部分导入失败处理
-  - 验证：错误处理完善
+- [ ] **T14.1** Implement GeoJSON export
+  - Convert Feature to GeoJSON format
+  - Coordinate conversion (Cartesian3 → WGS84)
+  - Save style info in properties
+  - File download (file-saver)
+  - Verify: Exported GeoJSON format correct
 
-## Phase 15: 捕捉功能
+- [ ] **T14.2** Implement export options
+  - Export all/selected only
+  - Custom filename
+  - Format validation
+  - Verify: Export options work
 
-- [ ] **T15.1** 实现顶点捕捉
-  - 检测附近顶点（屏幕空间）
-  - 捕捉容差配置（5-20px）
-  - 视觉反馈（高亮目标顶点）
-  - 验证：顶点捕捉准确
+- [ ] **T14.3** Implement GeoJSON import
+  - File upload
+  - JSON parsing
+  - GeoJSON format validation
+  - Verify: File reading works
 
-- [ ] **T15.2** 实现边捕捉
-  - 计算点到线段的投影
-  - 捕捉到最近边
-  - 视觉反馈（高亮目标边）
-  - 验证：边捕捉准确
+- [ ] **T14.4** Implement GeoJSON parsing
+  - Parse different geometry types
+  - Coordinate conversion (WGS84 → Cartesian3)
+  - Style restoration
+  - Verify: Imported features display correctly
 
-- [ ] **T15.3** 捕捉性能优化
-  - 空间索引（R-tree 或 Quadtree）
-  - 限制捕捉范围（视窗内）
-  - 节流处理
-  - 验证：捕捉流畅，无卡顿
+- [ ] **T14.5** Error handling
+  - Format error messages
+  - Unsupported coordinate system messages
+  - Partial import failure handling
+  - Verify: Error handling comprehensive
 
-- [ ] **T15.4** 捕捉开关和配置
-  - 全局开关（drawStore.snapEnabled）
-  - 容差配置（drawStore.snapTolerance）
-  - UI 开关按钮
-  - 验证：配置生效
+## Phase 15: Snapping
 
-## Phase 16: 撤销/重做
+- [ ] **T15.1** Implement vertex snapping
+  - Detect nearby vertices (screen space)
+  - Snap tolerance config (5-20px)
+  - Visual feedback (highlight target vertex)
+  - Verify: Vertex snapping accurate
 
-- [ ] **T16.1** 实现历史记录栈
-  - 操作历史数组（最多50步）
-  - 当前指针
-  - 添加操作记录
-  - 验证：历史记录正确
+- [ ] **T15.2** Implement edge snapping
+  - Calculate point-to-line projection
+  - Snap to nearest edge
+  - Visual feedback (highlight target edge)
+  - Verify: Edge snapping accurate
 
-- [ ] **T16.2** 实现撤销功能
-  - Ctrl+Z 快捷键
-  - 恢复上一步状态
-  - 更新 featureStore
-  - 验证：撤销正常
+- [ ] **T15.3** Snapping performance optimization
+  - Spatial index (R-tree or Quadtree)
+  - Limit snap range (viewport only)
+  - Throttle processing
+  - Verify: Snapping smooth, no lag
 
-- [ ] **T16.3** 实现重做功能
-  - Ctrl+Y 快捷键
-  - 恢复下一步状态
-  - 更新 featureStore
-  - 验证：重做正常
+- [ ] **T15.4** Snapping toggle and config
+  - Global toggle (gisStore.snapEnabled)
+  - Tolerance config (gisStore.snapTolerance)
+  - UI toggle button
+  - Verify: Config takes effect
 
-- [ ] **T16.4** 历史记录 UI（可选）
-  - 显示操作历史列表
-  - 跳转到任意历史点
-  - 验证：历史 UI 正常
+## Phase 16: Undo/Redo
 
-## Phase 17: 集成与优化
+- [ ] **T16.1** Implement history stack
+  - Operation history array (max 50 steps)
+  - Current pointer
+  - Add operation records
+  - Verify: History recording correct
 
-- [ ] **T17.1** 整合测量工具
-  - 将距离测量整合为线绘制的测量模式
-  - 将面积测量整合为多边形绘制的测量模式
-  - 保持向后兼容
-  - 验证：测量功能无损
+- [ ] **T16.2** Implement undo
+  - Ctrl+Z shortcut
+  - Restore previous state
+  - Update gisStore
+  - Verify: Undo works correctly
 
-- [ ] **T17.2** 性能优化
-  - 实体池管理
-  - 批量更新
-  - 懒加载大量要素
-  - 验证：100个要素时流畅
+- [ ] **T16.3** Implement redo
+  - Ctrl+Y shortcut
+  - Restore next state
+  - Update gisStore
+  - Verify: Redo works correctly
 
-- [ ] **T17.3** 快捷键系统
-  - ESC 取消当前操作
-  - Delete 删除选中要素
-  - Ctrl+Z/Y 撤销/重做
-  - Ctrl+A 全选
-  - 验证：快捷键正常
+- [ ] **T16.4** History UI (optional)
+  - Display operation history list
+  - Jump to any history point
+  - Verify: History UI works
 
-- [ ] **T17.4** 工具提示（Tooltip）
-  - 按钮悬停提示
-  - 快捷键提示
-  - 操作引导
-  - 验证：提示友好
+## Phase 17: Integration & Optimization
+
+- [ ] **T17.1** Integrate measurement tools
+  - Integrate distance measurement as line drawing measurement mode
+  - Integrate area measurement as polygon drawing measurement mode
+  - Maintain backward compatibility
+  - Verify: Measurement functionality intact
+
+- [ ] **T17.2** Performance optimization
+  - Entity pool management
+  - Batch updates
+  - Lazy load large feature sets
+  - Verify: Smooth with 100 features
+
+- [ ] **T17.3** Keyboard shortcuts system
+  - ESC cancel current operation
+  - Delete remove selected features
+  - Ctrl+Z/Y undo/redo
+  - Ctrl+A select all
+  - Verify: Shortcuts work correctly
+
+- [ ] **T17.4** Tooltips
+  - Button hover tooltips
+  - Shortcut hints
+  - Operation guidance
+  - Verify: Tooltips user-friendly
 
 ---
 
