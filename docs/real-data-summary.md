@@ -1,5 +1,19 @@
 # 真实数据总结（基于当前 PostgreSQL 入库数据）
 
+> ⚠️ **DEPRECATED - Document Migrated**
+>
+> **This file has been restructured and moved to**: `docs/data-models/sensor-data-catalog.md`
+>
+> **Migration Date**: 2025-12-05
+>
+> **Reason**: Reorganized into structured data model documentation as part of Phase 0 migration
+>
+> **Authoritative Source**: [docs/data-models/sensor-data-catalog.md](./data-models/sensor-data-catalog.md)
+>
+> This file is preserved for historical reference only.
+>
+> ---
+
 ## 数据概览
 - 数据来源：`backend/data` 下 Excel 全量导入，已写入 PostgreSQL（连接串见 `backend/.env`），共 77 份文件（`ingest_files`）。
 - 实际读数：`sensor_readings` 中 `is_simulated=false` 计 1,997,436 条；模拟数据另有 24,226 条可忽略。

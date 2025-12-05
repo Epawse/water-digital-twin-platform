@@ -364,6 +364,22 @@ export class CircleGraphic extends BaseGraphic {
     return this.centerPosition
   }
 
+  /**
+   * 应用样式到实体
+   * 覆盖基类方法以支持高亮效果
+   */
+  protected applyStyle(): void {
+    if (this.circleEntity && this.circleEntity.ellipse) {
+      const fillColor = Cesium.Color.fromCssColorString(this.style.fillColor || '#22D3EE')
+        .withAlpha(this.style.fillOpacity ?? this.style.opacity ?? 0.3)
+      const outlineColor = Cesium.Color.fromCssColorString(this.style.strokeColor || '#22D3EE')
+
+      this.circleEntity.ellipse.material = new Cesium.ColorMaterialProperty(fillColor)
+      this.circleEntity.ellipse.outlineColor = new Cesium.ConstantProperty(outlineColor)
+      this.circleEntity.ellipse.outlineWidth = new Cesium.ConstantProperty(this.style.strokeWidth || 2)
+    }
+  }
+
   toGeoJSON(): any {
     if (!this.centerPosition) {
       return null

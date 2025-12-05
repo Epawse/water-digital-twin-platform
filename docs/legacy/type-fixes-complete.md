@@ -1,3 +1,16 @@
+> ⚠️ **HISTORICAL DOCUMENT - FOR REFERENCE ONLY**
+>
+> This document is preserved for historical context. Content may be outdated.
+>
+> **For current information, refer to:**
+> - OpenSpec changes: `openspec/changes/`
+> - Active documentation: `docs/`
+> - Project context: `openspec/project.md`
+>
+> **Migration date**: 2025-12-05
+>
+> ---
+
 # Type Fixes Complete Report
 
 **Date**: 2025-12-03

@@ -285,6 +285,41 @@ class PolygonGraphic extends BaseGraphic {
 
 ---
 
+### Decision 6: Performance Optimization Strategy ✅
+
+**Problem**: Dynamic preview rendering was causing stuttering (< 30fps) during mouse movement
+
+**Investigation**: During Phase 1 implementation, we discovered that the initial approach of recreating entities on every mouse move event caused severe performance degradation.
+
+**Decision**: Implement CallbackProperty-based dynamic updates with smart rebuild strategy
+
+**Key Optimizations Implemented** (2025-12-04, Commit: 83eda0b):
+
+1. **CallbackProperty Pattern**: Replace static entity properties with dynamic callbacks
+   - Entities created once, updated via Cesium's internal optimization
+   - Eliminates ~180 entity create/destroy operations per second
+
+2. **Smart Preview Rebuild**: Only recreate preview entities when necessary
+   - Mouse moves: 0 entity operations (handled by CallbackProperty)
+   - Vertex additions: Rebuild preview as needed
+
+3. **Throttle Tuning**: Increased from 16ms → 50ms (~20fps sufficient for preview)
+
+**Performance Gains**:
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Entity operations | ~180/sec | 0/sec | ∞ |
+| FPS | 20-30fps | 60fps | 2-3x |
+| GC Pressure | High | Low | Significant |
+
+**Detailed Documentation**: See [`docs/GIS_PERFORMANCE_OPTIMIZATION.md`](../../../docs/GIS_PERFORMANCE_OPTIMIZATION.md) for:
+- Technical deep-dive into the problem diagnosis
+- Complete CallbackProperty implementation patterns for all graphic types
+- Testing methodology and performance metrics
+
+---
+
 ## Architecture
 
 ### Class Hierarchy
@@ -586,6 +621,7 @@ src/
 - `openspec/changes/implement-gis-measure-tools/` - Existing measurement implementation
 - `GIS_OPERATIONS_GUIDE.md` - 2D OpenLayers reference
 - `docs/GIS_FEATURE_MIGRATION_PLAN.md` - 2D→3D migration strategies
+- `docs/GIS_PERFORMANCE_OPTIMIZATION.md` - Dynamic preview performance optimization guide
 
 ---
 

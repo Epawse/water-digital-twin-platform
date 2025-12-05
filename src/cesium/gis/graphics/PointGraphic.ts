@@ -257,4 +257,16 @@ export class PointGraphic extends BaseGraphic {
       height: cartographic.height
     }
   }
+
+  /**
+   * 应用样式到实体
+   * 覆盖基类方法以支持高亮效果
+   */
+  protected applyStyle(): void {
+    if (this.pointEntity && this.pointEntity.point) {
+      const pointColor = Cesium.Color.fromCssColorString(this.style.pointColor || '#22D3EE')
+      this.pointEntity.point.pixelSize = new Cesium.ConstantProperty(this.style.pointSize || 8)
+      this.pointEntity.point.color = new Cesium.ConstantProperty(pointColor)
+    }
+  }
 }

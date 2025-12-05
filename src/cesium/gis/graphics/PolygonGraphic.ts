@@ -417,6 +417,26 @@ export class PolygonGraphic extends BaseGraphic {
     )
   }
 
+  /**
+   * 应用样式到实体
+   * 覆盖基类方法以支持高亮效果
+   */
+  protected applyStyle(): void {
+    // Update polygon fill
+    if (this.polygonEntity && this.polygonEntity.polygon) {
+      const fillColor = Cesium.Color.fromCssColorString(this.style.fillColor || '#ffcc33')
+        .withAlpha(this.style.fillOpacity ?? this.style.opacity ?? 0.5)
+      this.polygonEntity.polygon.material = new Cesium.ColorMaterialProperty(fillColor)
+    }
+
+    // Update outline
+    if (this.outlineEntity && this.outlineEntity.polyline) {
+      const strokeColor = Cesium.Color.fromCssColorString(this.style.strokeColor || '#ffcc33')
+      this.outlineEntity.polyline.material = new Cesium.ColorMaterialProperty(strokeColor)
+      this.outlineEntity.polyline.width = new Cesium.ConstantProperty(this.style.strokeWidth || 2)
+    }
+  }
+
   toGeoJSON(): any {
     if (this.positions.length < 3) {
       return null

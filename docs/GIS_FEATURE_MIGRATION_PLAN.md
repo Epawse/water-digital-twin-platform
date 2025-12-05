@@ -8,6 +8,30 @@
 
 ---
 
+> ⚠️ **STATUS: Technical Reference Document**
+>
+> **Related OpenSpec Change**: `openspec/changes/add-gis-drawing-toolkit/`
+>
+> **Document Status**:
+> - ✅ **Keep as Reference**: This document contains detailed 2D→3D technical mapping tables valuable for developers
+> - ⚠️ **Partial Integration**: High-level requirements migrated to `proposal.md`, detailed implementation guides retained here
+> - 📚 **Usage**: Consult this document when implementing specific GIS feature migrations
+>
+> **Authoritative Sources**:
+> - Requirements & Scope: [add-gis-drawing-toolkit/proposal.md](../openspec/changes/add-gis-drawing-toolkit/proposal.md)
+> - Architecture & Decisions: [add-gis-drawing-toolkit/design.md](../openspec/changes/add-gis-drawing-toolkit/design.md)
+> - Implementation Progress: [add-gis-drawing-toolkit/worklog.md](../openspec/changes/add-gis-drawing-toolkit/worklog.md)
+>
+> **Unique Value of This Document**:
+> - Detailed OpenLayers ↔ Cesium API mapping table (Section: 技术实现对照表)
+> - Step-by-step implementation examples for each geometry type
+> - UI/UX mockups and wireframes
+> - Phase-by-phase migration timeline (for historical reference)
+>
+> **Last Reviewed**: 2025-12-05 (Phase 0 migration)
+>
+> ---
+
 ## 📋 迁移优先级矩阵
 
 | 功能 | 2D 实现 | 3D 可行性 | 优先级 | 状态 |

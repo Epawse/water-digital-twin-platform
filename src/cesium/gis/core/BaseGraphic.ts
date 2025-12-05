@@ -130,6 +130,15 @@ export abstract class BaseGraphic {
   /** 是否处于编辑状态 */
   protected editing: boolean = false
 
+  /** 是否高亮显示 */
+  protected highlighted: boolean = false
+
+  /** 原始样式（用于高亮恢复） */
+  protected originalStyle: GraphicStyle | null = null
+
+  /** 关联的 Feature ID（用于选择功能） */
+  public featureId: string | null = null
+
   /** 创建时间 */
   public readonly createdAt: Date
 
@@ -259,6 +268,63 @@ export abstract class BaseGraphic {
    */
   public isEditing(): boolean {
     return this.editing
+  }
+
+  /**
+   * 检查是否高亮显示
+   */
+  public isHighlighted(): boolean {
+    return this.highlighted
+  }
+
+  /**
+   * 设置高亮状态
+   * @param enabled - 是否启用高亮
+   */
+  public setHighlight(enabled: boolean): void {
+    if (this.highlighted === enabled) return
+
+    if (enabled) {
+      // 保存原始样式
+      if (!this.originalStyle) {
+        this.originalStyle = { ...this.style }
+      }
+
+      // 应用高亮样式
+      this.style = {
+        ...this.style,
+        strokeColor: '#FFD700', // 金色边框
+        strokeWidth: (this.style.strokeWidth || 2) + 2,
+        fillOpacity: Math.min((this.style.fillOpacity || 0.3) + 0.2, 0.8),
+        pointColor: '#FFD700',
+        pointSize: (this.style.pointSize || 8) + 4
+      }
+      this.highlighted = true
+    } else {
+      // 恢复原始样式
+      if (this.originalStyle) {
+        this.style = { ...this.originalStyle }
+        this.originalStyle = null
+      }
+      this.highlighted = false
+    }
+
+    // 应用样式更新到实体
+    this.applyStyle()
+  }
+
+  /**
+   * 将 featureId 绑定到所有实体
+   * 用于 scene.pick 后识别实体属于哪个 Feature
+   */
+  public bindFeatureId(featureId: string): void {
+    this.featureId = featureId
+    this.entities.forEach(entity => {
+      if (!entity.properties) {
+        entity.properties = new Cesium.PropertyBag()
+      }
+      entity.properties.addProperty('featureId', featureId)
+    })
   }
 
   /**

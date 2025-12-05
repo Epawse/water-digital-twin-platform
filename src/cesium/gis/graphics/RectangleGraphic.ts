@@ -399,6 +399,22 @@ export class RectangleGraphic extends BaseGraphic {
     return Cesium.Cartesian3.fromRadians(centerLon, centerLat, 0)
   }
 
+  /**
+   * 应用样式到实体
+   * 覆盖基类方法以支持高亮效果
+   */
+  protected applyStyle(): void {
+    if (this.rectangleEntity && this.rectangleEntity.rectangle) {
+      const fillColor = Cesium.Color.fromCssColorString(this.style.fillColor || '#22D3EE')
+        .withAlpha(this.style.fillOpacity ?? this.style.opacity ?? 0.3)
+      const outlineColor = Cesium.Color.fromCssColorString(this.style.strokeColor || '#22D3EE')
+
+      this.rectangleEntity.rectangle.material = new Cesium.ColorMaterialProperty(fillColor)
+      this.rectangleEntity.rectangle.outlineColor = new Cesium.ConstantProperty(outlineColor)
+      this.rectangleEntity.rectangle.outlineWidth = new Cesium.ConstantProperty(this.style.strokeWidth || 2)
+    }
+  }
+
   toGeoJSON(): any {
     if (!this.rectangleBounds) {
       return null

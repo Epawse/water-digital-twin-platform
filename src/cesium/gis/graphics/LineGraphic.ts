@@ -407,4 +407,16 @@ export class LineGraphic extends BaseGraphic {
       this.create(positions)
     }
   }
+
+  /**
+   * 应用样式到实体
+   * 覆盖基类方法以支持高亮效果
+   */
+  protected applyStyle(): void {
+    if (this.lineEntity && this.lineEntity.polyline) {
+      const strokeColor = Cesium.Color.fromCssColorString(this.style.strokeColor || '#22D3EE')
+      this.lineEntity.polyline.material = new Cesium.ColorMaterialProperty(strokeColor)
+      this.lineEntity.polyline.width = new Cesium.ConstantProperty(this.style.strokeWidth || 2)
+    }
+  }
 }
