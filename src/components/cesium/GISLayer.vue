@@ -12,6 +12,7 @@ import { LineGraphic } from '@/cesium/gis/graphics/LineGraphic'
 import { CircleGraphic } from '@/cesium/gis/graphics/CircleGraphic'
 import { RectangleGraphic } from '@/cesium/gis/graphics/RectangleGraphic'
 import { PolygonGraphic } from '@/cesium/gis/graphics/PolygonGraphic'
+import { SnapService, type SnapTarget } from '@/cesium/gis/utils/SnapService'
 import type { DrawToolType } from '@/types/draw'
 import type { Feature } from '@/types/feature'
 
@@ -41,11 +42,18 @@ let isDraggingVertex = false
 let dragVertexIndex: number = -1
 let dragVertexFeatureId: string | null = null
 
+// ========== Snap State ==========
+let snapService: SnapService | null = null
+let snapIndicator: any = null  // Cesium.Entity
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let _currentSnapTarget: SnapTarget | null = null  // For future DrawTool integration
+
 onMounted(() => {
   // Set viewer in GIS store
   if (cesiumStore.viewer) {
     gisStore.setViewer(cesiumStore.viewer)
     setupSelectionHandler()
+    initSnapService()
   }
 })
 
@@ -784,5 +792,138 @@ function cleanup() {
     selectionHandler.destroy()
     selectionHandler = null
   }
+
+  // Cleanup snap service
+  if (snapService) {
+    snapService.destroy()
+    snapService = null
+  }
+  removeSnapIndicator()
 }
+
+// ========== Snap Functions ==========
+
+/**
+ * Initialize snap service
+ */
+function initSnapService(): void {
+  const viewer = cesiumStore.viewer
+  if (!viewer) return
+
+  snapService = new SnapService(viewer, {
+    enabled: gisStore.snapEnabled,
+    tolerance: gisStore.snapTolerance,
+    snapToVertex: true,
+    snapToEdge: true
+  })
+
+  // Sync existing features
+  snapService.syncFromStore(gisStore.graphics)
+
+  // Create snap indicator entity
+  createSnapIndicator()
+}
+
+/**
+ * Create snap indicator entity
+ */
+function createSnapIndicator(): void {
+  const viewer = cesiumStore.viewer
+  if (!viewer || snapIndicator) return
+
+  snapIndicator = viewer.entities.add({
+    id: '_snap_indicator',
+    position: Cesium.Cartesian3.ZERO,
+    show: false,
+    point: {
+      pixelSize: 12,
+      color: Cesium.Color.ORANGE,
+      outlineColor: Cesium.Color.WHITE,
+      outlineWidth: 2,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
+    }
+  })
+}
+
+/**
+ * Remove snap indicator entity
+ */
+function removeSnapIndicator(): void {
+  const viewer = cesiumStore.viewer
+  if (viewer && snapIndicator) {
+    viewer.entities.remove(snapIndicator)
+    snapIndicator = null
+  }
+}
+
+/**
+ * Update snap indicator position and visibility
+ */
+function updateSnapIndicator(target: SnapTarget | null): void {
+  if (!snapIndicator) return
+
+  _currentSnapTarget = target
+
+  if (target) {
+    snapIndicator.position = target.position
+    snapIndicator.show = true
+
+    // Change color based on snap type
+    if (target.type === 'vertex') {
+      snapIndicator.point.color = Cesium.Color.ORANGE
+      snapIndicator.point.pixelSize = 14
+    } else {
+      snapIndicator.point.color = Cesium.Color.YELLOW
+      snapIndicator.point.pixelSize = 10
+    }
+  } else {
+    snapIndicator.show = false
+  }
+}
+
+/**
+ * Find snap target for screen position (exported for DrawTool integration)
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _findSnapTarget(screenPosition: { x: number; y: number }): SnapTarget | null {
+  if (!snapService || !gisStore.snapEnabled) return null
+
+  // Update snap service options
+  snapService.setOptions({
+    enabled: gisStore.snapEnabled,
+    tolerance: gisStore.snapTolerance
+  })
+
+  return snapService.findSnapTarget(new Cesium.Cartesian2(screenPosition.x, screenPosition.y))
+}
+
+/**
+ * Sync features to snap service when graphics change
+ */
+function syncSnapFeatures(): void {
+  if (snapService) {
+    snapService.syncFromStore(gisStore.graphics)
+  }
+}
+
+// Watch for feature changes to sync snap targets
+watch(() => gisStore.featureCount, () => {
+  syncSnapFeatures()
+})
+
+// Watch for snap enabled changes
+watch(() => gisStore.snapEnabled, (enabled) => {
+  if (snapService) {
+    snapService.setOptions({ enabled })
+  }
+  if (!enabled) {
+    updateSnapIndicator(null)
+  }
+})
+
+// Export snap functions for future integration
+defineExpose({
+  findSnapTarget: _findSnapTarget,
+  getCurrentSnapTarget: () => _currentSnapTarget
+})
 </script>

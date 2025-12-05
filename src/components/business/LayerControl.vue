@@ -57,6 +57,15 @@
           >
             <i :class="tool.icon"></i>
           </button>
+          <!-- Snap Toggle -->
+          <button
+            class="tool-btn snap-btn"
+            :class="{ active: gisStore.snapEnabled }"
+            title="吸附功能"
+            @click="toggleSnap"
+          >
+            <i class="fa-solid fa-magnet"></i>
+          </button>
         </div>
 
         <!-- Search Bar -->
@@ -582,6 +591,13 @@ function toggleDrawTool(toolId: DrawToolType) {
 }
 
 /**
+ * Toggle snap functionality
+ */
+function toggleSnap() {
+  gisStore.setSnapEnabled(!gisStore.snapEnabled)
+}
+
+/**
  * Filter features by search query
  */
 const filteredFeatures = computed(() => {
@@ -964,6 +980,21 @@ function clearAllFeatures() {
     border-color: $neon-cyan;
     color: $neon-cyan;
     text-shadow: 0 0 5px $neon-cyan;
+  }
+
+  // Snap button separator
+  &.snap-btn {
+    margin-left: 8px;
+    flex: 0 0 auto;
+    width: 36px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+
+    &.active {
+      background: rgba(249, 115, 22, 0.15);
+      border-color: #f97316;
+      color: #f97316;
+      text-shadow: 0 0 5px #f97316;
+    }
   }
 }
 
