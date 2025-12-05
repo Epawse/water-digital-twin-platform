@@ -46,7 +46,7 @@ coverage/
 # 个人文档和笔记（敏感信息）
 上一次.txt
 上次记录.txt
-CLAUDE.md
+# CLAUDE.md - 已移除忽略，用于项目共享配置
 AGENTS.md
 *.local.md
 
@@ -74,7 +74,8 @@ backend/app/utils/reader.py
 backend/app/utils/scanner.py
 
 # AI 助手配置和开发过程文档
-.claude/
+# .claude/ - 已移除忽略，用于项目共享配置
+.claude/settings.local.json  # 个人权限设置仍然忽略
 .gemini/
 
 # ========================================
@@ -103,8 +104,8 @@ backend/app/utils/scanner.py
 # 3. 记得在项目 wiki 或文档中说明这些本地忽略
 #
 # 本地忽略不会被提交到 git，其他开发者的设置完全独立
-CLAUDE.md
-AGENTS.md
+# CLAUDE.md - 已移除忽略，用于项目共享配置
+# AGENTS.md - 已移至 openspec/AGENTS.md
 _context/
 
 # Note: openspec/ 包含项目规格文档，应该被提交
