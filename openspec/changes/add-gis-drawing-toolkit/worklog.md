@@ -2,12 +2,12 @@
 
 ## Current Goal
 
-**Phase 0-1, 7, 8, 9, 10 completed (~35/89 tasks = 39%)**. Feature movement is now functional.
+**Phase 0-1, 7, 8, 9, 10, 11 completed (~40/89 tasks = 45%)**. Vertex editing is now functional.
 
 Next priority options:
 - **Phase 2-6**: Enhance drawing tools (real-time measurements, style config)
-- **Phase 11**: Vertex editing
 - **Phase 12**: Style configuration panel
+- **Phase 13**: Properties panel
 
 ---
 
@@ -120,6 +120,43 @@ Next priority options:
    - All selected features move together
    - Offset calculated incrementally (from last position)
 
+### Vertex Editing Implementation (2025-12-05)
+**Phase 11 completed** - Vertex editing for polygon and line features
+
+**Implementation**:
+1. **Double-Click to Enter Edit Mode**
+   - LEFT_DOUBLE_CLICK handler in GISLayer.vue
+   - Only polygon and line types support vertex editing
+   - Calls `graphic.startEdit()` to show vertex markers
+
+2. **Vertex Markers with Index Property**
+   - All Graphic classes store `vertexIndex` in marker properties
+   - PolygonGraphic: Red point markers at each vertex
+   - LineGraphic: Point markers with custom style
+   - RectangleGraphic: Markers at 4 corners
+   - CircleGraphic: Center and edge markers
+
+3. **Vertex Dragging**
+   - `getVertexIndexFromEntity()` extracts index from picked entity
+   - LEFT_DOWN detects vertex marker clicks
+   - MOUSE_MOVE updates vertex position in real-time
+   - LEFT_UP commits change and syncs geometry to store
+
+4. **Delete Vertex (Shift+Click)**
+   - Polygon: Minimum 3 vertices enforced
+   - Line: Minimum 2 vertices enforced
+   - Vertex markers refresh after deletion
+
+5. **Exit Edit Mode**
+   - ESC key: Calls `exitEditMode()`
+   - Click empty space: Exits edit mode
+   - Geometry synced to store on exit
+
+**Code Changes**:
+- GISLayer.vue: +200 lines for vertex editing handlers
+- Fixed `isEditing` property/method conflict in all Graphic classes
+- Fixed `isCreated` non-existent property references
+
 ---
 
 ## Files Touched
@@ -225,8 +262,14 @@ Next priority options:
 - [x] T10.3: Line/polygon feature movement
 - [x] T10.4: Store update after movement
 
-### 🔲 Phase 11-17: Advanced Features (0/31 tasks)
-- [ ] Phase 11: Vertex editing (5 tasks)
+### ✅ Phase 11: Vertex Editing (5/5 tasks)
+- [x] T11.1: Double-click to enter edit mode
+- [x] T11.2: Display vertex handles (point markers)
+- [x] T11.3: Drag individual vertices
+- [x] T11.4: Delete vertices (Shift+Click)
+- [x] T11.5: Exit edit mode (ESC/click empty space)
+
+### 🔲 Phase 12-17: Advanced Features (0/26 tasks)
 - [ ] Phase 12: Style panel (6 tasks)
 - [ ] Phase 13: Properties panel (4 tasks)
 - [ ] Phase 14: GeoJSON import/export (5 tasks)
@@ -234,26 +277,32 @@ Next priority options:
 - [ ] Phase 16: Undo/Redo (4 tasks)
 - [ ] Phase 17: Integration & optimization (4 tasks)
 
-**Total Progress**: ~35/89 tasks (39%)
+**Total Progress**: ~40/89 tasks (45%)
 
 ---
 
 ## Open Questions
 
 ### 1. Next Phase Priority?
-**Decision Needed**: Should we continue with Phase 2-6 (drawing tool enhancement) or jump to Phase 10-11 (editing features)?
+**Status**: Phase 10-11 (editing features) completed! ✅
 
-**Option A**: Phase 2-6 - Enhance Drawing Tools
-- Add real-time measurements, style config per tool
-- Pros: Complete feature parity for drawing
-- Estimated: 3-4 days
+**Remaining Options**:
+- **Option A**: Phase 2-6 - Enhance Drawing Tools
+  - Add real-time measurements, style config per tool
+  - Pros: Complete feature parity for drawing
+  - Estimated: 3-4 days
 
-**Option B**: Phase 10-11 - Enable Editing
-- Add drag-to-move and vertex editing
-- Pros: Full edit capabilities for existing features
-- Estimated: 2-3 days
+- **Option B**: Phase 12 - Style Configuration Panel
+  - Add UI for editing feature colors, line widths, etc.
+  - Pros: Immediate visual feedback for users
+  - Estimated: 1-2 days
 
-**Recommendation**: Option B (UI first) for faster user feedback
+- **Option C**: Phase 14 - GeoJSON Import/Export
+  - Enable data exchange with other GIS tools
+  - Pros: Practical for real-world workflows
+  - Estimated: 1-2 days
+
+**Recommendation**: Phase 12 (style panel) for user-friendly editing experience
 
 ### 2. Remaining Type Errors?
 - Status: 63 TypeScript errors in test files (non-blocking)
