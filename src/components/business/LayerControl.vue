@@ -129,20 +129,33 @@
         </div>
 
         <!-- Batch Actions -->
-        <div v-if="gisStore.featureCount > 0" class="batch-actions">
-          <button class="batch-btn" @click="exportFeatures">
+        <div class="batch-actions">
+          <button class="batch-btn" @click="triggerImport">
+            <i class="fa-solid fa-upload"></i>
+            导入
+          </button>
+          <button class="batch-btn" @click="exportFeatures" :disabled="gisStore.featureCount === 0">
             <i class="fa-solid fa-download"></i>
             导出
           </button>
-          <button class="batch-btn" @click="selectAllFeatures">
+          <button class="batch-btn" @click="selectAllFeatures" :disabled="gisStore.featureCount === 0">
             <i class="fa-solid fa-check-double"></i>
             全选
           </button>
-          <button class="batch-btn danger" @click="clearAllFeatures">
+          <button class="batch-btn danger" @click="clearAllFeatures" :disabled="gisStore.featureCount === 0">
             <i class="fa-solid fa-broom"></i>
             清空
           </button>
         </div>
+
+        <!-- Hidden file input for import -->
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".geojson,.json"
+          style="display: none"
+          @change="handleFileImport"
+        />
 
         <!-- Style Configuration Panel -->
         <div v-if="gisStore.selectedCount > 0" class="style-panel">
@@ -373,6 +386,9 @@ const drawTools = [
 // Search query
 const searchQuery = ref('')
 
+// File input ref for import
+const fileInput = ref<HTMLInputElement | null>(null)
+
 // === Resource Layer Functions (Original) ===
 function toggleLayer(layer: Layer) {
   layer.active = !layer.active
@@ -536,16 +552,60 @@ function deleteFeature(featureId: string) {
  * Export features as GeoJSON
  */
 function exportFeatures() {
-  const geojson = gisStore.exportGeoJSON()
+  const selectedOnly = gisStore.selectedCount > 0
+  const geojson = gisStore.exportGeoJSON(selectedOnly)
 
   // Create download
   const blob = new Blob([geojson], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `features_${Date.now()}.geojson`
+  const prefix = selectedOnly ? 'selected_features' : 'all_features'
+  link.download = `${prefix}_${Date.now()}.geojson`
   link.click()
   URL.revokeObjectURL(url)
+}
+
+/**
+ * Trigger file input click for import
+ */
+function triggerImport() {
+  fileInput.value?.click()
+}
+
+/**
+ * Handle file import
+ */
+function handleFileImport(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const content = e.target?.result as string
+    if (!content) {
+      alert('无法读取文件内容')
+      return
+    }
+
+    const result = gisStore.importGeoJSON(content)
+
+    if (result.success > 0) {
+      alert(`成功导入 ${result.success} 个要素${result.errors.length > 0 ? `\n\n警告:\n${result.errors.join('\n')}` : ''}`)
+    } else {
+      alert(`导入失败:\n${result.errors.join('\n')}`)
+    }
+
+    // Reset input value to allow importing the same file again
+    input.value = ''
+  }
+
+  reader.onerror = () => {
+    alert('读取文件时发生错误')
+  }
+
+  reader.readAsText(file)
 }
 
 /**

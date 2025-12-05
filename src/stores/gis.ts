@@ -413,27 +413,240 @@ export const useGISStore = defineStore('gis', () => {
   // ========== Import/Export Actions ==========
 
   /**
+   * Convert internal feature to GeoJSON geometry
+   */
+  function featureToGeoJSONGeometry(feature: Feature): { type: string; coordinates: any } | null {
+    switch (feature.type) {
+      case 'point':
+        return {
+          type: 'Point',
+          coordinates: [feature.position.longitude, feature.position.latitude, (feature.position as any).height || 0]
+        }
+      case 'line':
+      case 'distance':
+        const lineCoords = feature.type === 'line'
+          ? feature.vertices.map(v => [v.longitude, v.latitude, (v as any).height || 0])
+          : [[feature.startPoint.longitude, feature.startPoint.latitude], [feature.endPoint.longitude, feature.endPoint.latitude]]
+        return {
+          type: 'LineString',
+          coordinates: lineCoords
+        }
+      case 'polygon':
+      case 'area':
+        // GeoJSON polygon requires first and last point to be the same
+        const polyCoords = feature.vertices.map(v => [v.longitude, v.latitude, (v as any).height || 0])
+        if (polyCoords.length > 0) {
+          polyCoords.push(polyCoords[0]) // Close the ring
+        }
+        return {
+          type: 'Polygon',
+          coordinates: [polyCoords]
+        }
+      case 'circle':
+        // GeoJSON doesn't have a native circle type, export as Point with radius in properties
+        return {
+          type: 'Point',
+          coordinates: [feature.center.longitude, feature.center.latitude, (feature.center as any).height || 0]
+        }
+      case 'rectangle':
+        // Export rectangle as Polygon
+        const sw = feature.southwest
+        const ne = feature.northeast
+        const rectCoords = [
+          [sw.longitude, sw.latitude],
+          [ne.longitude, sw.latitude],
+          [ne.longitude, ne.latitude],
+          [sw.longitude, ne.latitude],
+          [sw.longitude, sw.latitude] // Close the ring
+        ]
+        return {
+          type: 'Polygon',
+          coordinates: [rectCoords]
+        }
+      default:
+        return null
+    }
+  }
+
+  /**
    * Export all features as GeoJSON
+   * @param selectedOnly - Only export selected features
    * @returns GeoJSON FeatureCollection as string
    */
-  function exportGeoJSON(): string {
-    const featureCollection = {
-      type: 'FeatureCollection',
-      features: Array.from(features.value.values()).map(feature => ({
+  function exportGeoJSON(selectedOnly = false): string {
+    const featuresToExport = selectedOnly
+      ? Array.from(features.value.values()).filter(f => selectedFeatureIds.value.has(f.id))
+      : Array.from(features.value.values())
+
+    const geojsonFeatures = featuresToExport.map(feature => {
+      const geometry = featureToGeoJSONGeometry(feature)
+      return {
         type: 'Feature',
         id: feature.id,
-        geometry: feature.geometry,
+        geometry,
         properties: {
           name: feature.name,
-          type: feature.type,
+          featureType: feature.type, // Use featureType to avoid conflict with GeoJSON type
+          description: feature.description,
           ...feature.properties,
           style: feature.style,
-          createdAt: feature.createdAt?.toISOString()
+          createdAt: feature.createdAt?.toISOString(),
+          // Special properties for circle/rectangle
+          ...(feature.type === 'circle' ? { radius: feature.radius, area: feature.area } : {}),
+          ...(feature.type === 'rectangle' ? { width: feature.width, height: feature.height, area: feature.area } : {}),
+          ...(feature.type === 'line' ? { length: feature.length } : {}),
+          ...(feature.type === 'polygon' ? { area: feature.area, perimeter: feature.perimeter } : {})
         }
-      }))
+      }
+    })
+
+    const featureCollection = {
+      type: 'FeatureCollection',
+      features: geojsonFeatures,
+      metadata: {
+        exportedAt: new Date().toISOString(),
+        featureCount: geojsonFeatures.length,
+        source: 'water-digital-twin-platform'
+      }
     }
 
     return JSON.stringify(featureCollection, null, 2)
+  }
+
+  /**
+   * Import features from GeoJSON string
+   * @param geojsonStr - GeoJSON string
+   * @returns Number of features imported
+   */
+  function importGeoJSON(geojsonStr: string): { success: number; errors: string[] } {
+    const errors: string[] = []
+    let successCount = 0
+
+    try {
+      const geojson = JSON.parse(geojsonStr)
+
+      if (geojson.type !== 'FeatureCollection' && geojson.type !== 'Feature') {
+        errors.push('Invalid GeoJSON: must be FeatureCollection or Feature')
+        return { success: 0, errors }
+      }
+
+      const featuresToImport = geojson.type === 'FeatureCollection'
+        ? geojson.features
+        : [geojson]
+
+      for (const geoFeature of featuresToImport) {
+        try {
+          const feature = geoJSONToFeature(geoFeature)
+          if (feature) {
+            features.value.set(feature.id, feature)
+            successCount++
+          }
+        } catch (err) {
+          errors.push(`Failed to import feature: ${(err as Error).message}`)
+        }
+      }
+    } catch (err) {
+      errors.push(`Invalid JSON: ${(err as Error).message}`)
+    }
+
+    return { success: successCount, errors }
+  }
+
+  /**
+   * Convert GeoJSON feature to internal Feature
+   */
+  function geoJSONToFeature(geoFeature: any): Feature | null {
+    const { geometry, properties = {} } = geoFeature
+    if (!geometry) return null
+
+    const id = geoFeature.id || `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const now = new Date()
+    const baseProps = {
+      id,
+      name: properties.name || `导入要素 ${id.substring(0, 8)}`,
+      description: properties.description,
+      createdAt: properties.createdAt ? new Date(properties.createdAt) : now,
+      updatedAt: now,
+      style: properties.style || {},
+      properties: { ...properties },
+      visible: true
+    }
+
+    // Determine feature type from properties or geometry
+    const featureType = properties.featureType || properties.type
+
+    switch (geometry.type) {
+      case 'Point':
+        const [pLng, pLat, pHeight = 0] = geometry.coordinates
+        // Check if it's a circle (has radius property)
+        if (featureType === 'circle' || properties.radius) {
+          return {
+            ...baseProps,
+            type: 'circle',
+            center: { longitude: pLng, latitude: pLat, height: pHeight },
+            radius: properties.radius || 100,
+            area: properties.area || Math.PI * Math.pow(properties.radius || 100, 2)
+          } as any
+        }
+        return {
+          ...baseProps,
+          type: 'point',
+          position: { longitude: pLng, latitude: pLat, height: pHeight },
+          icon: properties.icon,
+          label: properties.label
+        } as any
+
+      case 'LineString':
+        const lineVertices = geometry.coordinates.map((coord: number[]) => ({
+          longitude: coord[0],
+          latitude: coord[1],
+          height: coord[2] || 0
+        }))
+        return {
+          ...baseProps,
+          type: 'line',
+          vertices: lineVertices,
+          length: properties.length || 0,
+          lineType: 'solid'
+        } as any
+
+      case 'Polygon':
+        const ring = geometry.coordinates[0] || []
+        // Remove closing point if present
+        const polyVertices = ring.slice(0, -1).map((coord: number[]) => ({
+          longitude: coord[0],
+          latitude: coord[1],
+          height: coord[2] || 0
+        }))
+
+        // Check if it's a rectangle
+        if (featureType === 'rectangle' || (polyVertices.length === 4 && properties.width && properties.height)) {
+          // Find southwest and northeast
+          const lngs = polyVertices.map((v: any) => v.longitude)
+          const lats = polyVertices.map((v: any) => v.latitude)
+          return {
+            ...baseProps,
+            type: 'rectangle',
+            southwest: { longitude: Math.min(...lngs), latitude: Math.min(...lats) },
+            northeast: { longitude: Math.max(...lngs), latitude: Math.max(...lats) },
+            width: properties.width || 0,
+            height: properties.height || 0,
+            area: properties.area || 0
+          } as any
+        }
+
+        return {
+          ...baseProps,
+          type: 'polygon',
+          vertices: polyVertices,
+          area: properties.area || 0,
+          perimeter: properties.perimeter
+        } as any
+
+      default:
+        console.warn(`Unsupported geometry type: ${geometry.type}`)
+        return null
+    }
   }
 
   // ========== Settings Actions ==========
@@ -558,6 +771,7 @@ export const useGISStore = defineStore('gis', () => {
 
     // ========== Import/Export ==========
     exportGeoJSON,
+    importGeoJSON,
 
     // ========== Reset ==========
     reset,
