@@ -2,12 +2,12 @@
 
 ## Current Goal
 
-**Phase 0-1, 7-12, 14 completed (~51/89 tasks = 57%)**. GeoJSON import/export is now functional.
+**Phase 0-1, 7-14 completed (~55/89 tasks = 62%)**. Properties panel is now functional.
 
 Next priority options:
-- **Phase 2-6**: Enhance drawing tools (real-time measurements, style config)
-- **Phase 13**: Properties panel
+- **Phase 2-6**: Enhance drawing tools (real-time measurements)
 - **Phase 15**: Snap functionality
+- **Phase 16**: Undo/Redo
 
 ---
 
@@ -216,6 +216,29 @@ Next priority options:
 - gis.ts: +180 lines for import/export logic
 - LayerControl.vue: +60 lines for import UI
 
+### Properties Panel Implementation (2025-12-05)
+**Phase 13 completed** - Feature properties viewing and editing
+
+**Implementation**:
+1. **Editable Fields**
+   - Name input field
+   - Description textarea
+   - Real-time save via `updateFeature()`
+
+2. **Read-only Metadata**
+   - Feature type (with Chinese labels)
+   - Creation time (localized format)
+
+3. **Geometry Properties**
+   - Line: length, vertex count
+   - Polygon: area, perimeter, vertex count
+   - Circle: radius, area
+   - Rectangle: dimensions, area
+   - Distance: measured distance
+
+**Code Changes**:
+- LayerControl.vue: +260 lines for properties panel
+
 ---
 
 ## Files Touched
@@ -336,6 +359,12 @@ Next priority options:
 - [x] T12.5: Implement real-time style application
 - [x] T12.6: Implement style presets (6 presets)
 
+### ✅ Phase 13: Properties Panel (4/4 tasks)
+- [x] T13.1: Create PropertiesPanel component (integrated in LayerControl)
+- [x] T13.2: Implement name and description editing
+- [x] T13.3: Implement geometry properties display
+- [x] T13.4: Real-time save to store
+
 ### ✅ Phase 14: GeoJSON Import/Export (5/5 tasks)
 - [x] T14.1: Implement GeoJSON export (all feature types)
 - [x] T14.2: Implement export options (all/selected)
@@ -343,13 +372,12 @@ Next priority options:
 - [x] T14.4: Implement GeoJSON parsing (all geometry types)
 - [x] T14.5: Error handling and validation
 
-### 🔲 Phase 13, 15-17: Advanced Features (0/16 tasks)
-- [ ] Phase 13: Properties panel (4 tasks)
+### 🔲 Phase 15-17: Advanced Features (0/12 tasks)
 - [ ] Phase 15: Snap functionality (4 tasks)
 - [ ] Phase 16: Undo/Redo (4 tasks)
 - [ ] Phase 17: Integration & optimization (4 tasks)
 
-**Total Progress**: ~51/89 tasks (57%)
+**Total Progress**: ~55/89 tasks (62%)
 
 ---
 
