@@ -1,90 +1,119 @@
 # CLAUDE.md
 
-> Claude Code 自动加载此文件作为项目上下文
+> Claude Code automatically loads this file as project context
 
-## 项目概述
+## Project Overview
 
-**水利数字孪生基础平台** - Vue 3 + TypeScript + CesiumJS 3D GIS 应用
+**Water Conservancy Digital Twin Platform** - Vue 3 + TypeScript + CesiumJS 3D GIS Application
 
-详细信息见: `openspec/project.md`
+See `openspec/project.md` for details.
 
-## 上下文恢复
+## Context Restoration
 
-新对话开始时，读取以下文件恢复上下文：
-
-```
-1. openspec/project.md          # 项目技术栈和约定
-2. openspec/changes/*/worklog.md # 当前进行中的变更
-3. devlogs/devlog-YYYY-MM-DD.md  # 今日开发日志
-```
-
-## 工作流
-
-### OpenSpec 变更管理
+At the start of a new conversation, read these files to restore context:
 
 ```
-/openspec:proposal <title>  # 创建变更提案（不写代码）
-/openspec:apply <id>        # 实施已批准的变更
-/openspec:archive <id>      # 归档完成的变更
+1. openspec/project.md          # Project tech stack and conventions
+2. openspec/changes/*/worklog.md # Active change worklogs
+3. devlogs/devlog-YYYY-MM-DD.md  # Today's development log
 ```
 
-详见: `openspec/AGENTS.md`
+## Workflows
 
-### Skills 知识库
-
-项目配置了领域知识技能，Claude 会自动根据任务相关性加载：
-
-- **cesium-webgis**: Cesium 3D GIS 最佳实践 (`.claude/skills/cesium-webgis/`)
-
-### MCP 工具使用
-
-| 任务 | 工具 |
-|-----|------|
-| 查询库文档 | `mcp__context7__get-library-docs` |
-| GitHub PR/Issues | `mcp__github__*` |
-| 浏览器调试 | `mcp__chrome-devtools__*` |
-| 部署 | `mcp__vercel__*` |
-
-### Task 子代理
-
-| 类型 | 用途 |
-|-----|------|
-| `Explore` | 代码库探索、搜索 |
-| `Plan` | 架构设计、实施规划 |
-
-## 代码约定
-
-- **TypeScript 严格模式**: 所有代码
-- **Vue 3 Composition API**: `<script setup>` 语法
-- **Cesium Viewer**: 必须使用 `shallowRef`
-- **样式**: 使用 `_variables.scss`，禁止硬编码颜色
-
-## Git 约定
-
-**Commit 格式**: `<type>(<scope>): <description>`
-
-类型: `feat`, `fix`, `perf`, `docs`, `chore`, `test`, `refactor`
-
-## 目录结构
+### OpenSpec Change Management
 
 ```
-openspec/           # 变更管理
-├── project.md      # 项目上下文
-├── changes/        # 变更提案和工作日志
-└── specs/          # 需求规格
+/openspec:proposal <title>  # Create change proposal (no code)
+/openspec:apply <id>        # Implement approved change
+/openspec:archive <id>      # Archive completed change
+```
 
-devlogs/            # 开发日志（按日期）
+See: `openspec/AGENTS.md`
+
+### Skills Knowledge Base
+
+Project has domain knowledge skills that Claude loads based on task relevance:
+
+- **cesium-webgis**: Cesium 3D GIS best practices (`.claude/skills/cesium-webgis/`)
+
+### MCP Tool Usage
+
+**Recommended MCP Tools**:
+
+| Task | Tool | Note |
+|------|------|------|
+| Library docs | `mcp__context7__*` | ✅ Preferred |
+| Browser debugging | `mcp__chrome-devtools__*` | ✅ Preferred |
+| Figma designs | `mcp__figma__*` | ✅ Preferred |
+
+**Use with Caution**:
+
+| Task | Tool | Note |
+|------|------|------|
+| GitHub PR/Issues | `mcp__github__create_pull_request` | ⚠️ PR creation only |
+| GitHub queries | `mcp__github__get_*`, `mcp__github__list_*` | ⚠️ Read-only queries |
+| Deployment | `mcp__vercel__*` | ⚠️ On-demand |
+
+### ⚠️ Git Operations Rules (CRITICAL)
+
+**MUST use terminal commands**:
+```bash
+git add / git commit / git push   # Local commits and push
+git pull / git fetch              # Sync with remote
+git branch / git checkout         # Branch operations
+git merge / git rebase            # Merge operations
+```
+
+**NEVER use `mcp__github__push_files`**:
+- Creates remote commits via API, **does NOT push local history**
+- Causes local and remote history divergence
+- Only suitable for scenarios **without local clone** (NOT this project)
+
+**GitHub MCP allowed for**:
+- `create_pull_request` - Create PRs
+- `get_*` / `list_*` - Query information
+- `create_issue` / `add_issue_comment` - Issue management
+
+### Task Subagents
+
+| Type | Purpose |
+|------|---------|
+| `Explore` | Codebase exploration, search |
+| `Plan` | Architecture design, implementation planning |
+
+## Code Conventions
+
+- **TypeScript Strict Mode**: All code
+- **Vue 3 Composition API**: `<script setup>` syntax
+- **Cesium Viewer**: Must use `shallowRef`
+- **Styles**: Use `_variables.scss`, no hardcoded colors
+
+## Git Conventions
+
+**Commit format**: `<type>(<scope>): <description>`
+
+Types: `feat`, `fix`, `perf`, `docs`, `chore`, `test`, `refactor`
+
+## Directory Structure
+
+```
+openspec/           # Change management
+├── project.md      # Project context
+├── changes/        # Change proposals and worklogs
+└── specs/          # Requirement specs
+
+devlogs/            # Development logs (by date)
 
 .claude/
-├── commands/       # 自定义斜杠命令
-└── skills/         # 领域知识技能
+├── commands/       # Custom slash commands
+└── skills/         # Domain knowledge skills
 
-skills/             # [迁移中] -> .claude/skills/
+skills/             # [Migrating] -> .claude/skills/
 ```
 
-## 重要提醒
+## Important Reminders
 
-1. **并行工具调用**: 独立操作应并行执行以提高效率
-2. **Skills 自动加载**: Claude 根据任务自动判断是否加载 skill
-3. **OpenSpec 优先**: 重大变更先创建提案，再实施
-4. **上下文管理**: 使用 `/status` 监控，80% 时 `/clear`
+1. **Parallel tool calls**: Independent operations should run in parallel for efficiency
+2. **Skills auto-loading**: Claude auto-loads skills based on task relevance
+3. **OpenSpec first**: Major changes need proposals before implementation
+4. **Context management**: Use `/status` to monitor, `/clear` at 80%
