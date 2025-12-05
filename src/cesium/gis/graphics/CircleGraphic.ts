@@ -5,7 +5,7 @@
  * 使用两次点击：第一次定圆心，第二次定半径
  */
 import * as Cesium from 'cesium'
-import { BaseGraphic, type BaseGraphicOptions, type GraphicStyle } from '../core/BaseGraphic'
+import { BaseGraphic, type BaseGraphicOptions } from '../core/BaseGraphic'
 
 /**
  * 圆形图形选项
@@ -99,7 +99,7 @@ export class CircleGraphic extends BaseGraphic {
       this.createAreaLabel()
     }
 
-    this.isCreated = true
+    // Circle creation complete
   }
 
   /**
@@ -273,7 +273,7 @@ export class CircleGraphic extends BaseGraphic {
   startEdit(): void {
     if (!this.centerPosition) return
 
-    this.isEditing = true
+    this.editing = true
 
     // 显示中心点标记
     this.centerMarker = this.viewer.entities.add({
@@ -322,7 +322,7 @@ export class CircleGraphic extends BaseGraphic {
    * 停止编辑模式
    */
   stopEdit(): void {
-    this.isEditing = false
+    this.editing = false
 
     if (this.centerMarker) {
       this.viewer.entities.remove(this.centerMarker)
@@ -348,7 +348,7 @@ export class CircleGraphic extends BaseGraphic {
     this.areaLabelEntity = null
     this.centerMarker = null
     this.edgeMarker = null
-    this.isCreated = false
+    // Circle removed
   }
 
   /**

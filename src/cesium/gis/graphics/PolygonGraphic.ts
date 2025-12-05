@@ -5,7 +5,7 @@
  * 使用独立 Polyline 实现边框（绕过 Cesium PolygonGraphics outlineWidth 限制）
  */
 import * as Cesium from 'cesium'
-import { BaseGraphic, type BaseGraphicOptions, type GraphicStyle } from '../core/BaseGraphic'
+import { BaseGraphic, type BaseGraphicOptions } from '../core/BaseGraphic'
 
 /**
  * 多边形图形选项
@@ -84,7 +84,7 @@ export class PolygonGraphic extends BaseGraphic {
       this.createAreaLabel()
     }
 
-    this.isCreated = true
+    // Mark as created (using internal flag)
   }
 
   /**
@@ -348,7 +348,7 @@ export class PolygonGraphic extends BaseGraphic {
   startEdit(): void {
     if (this.positions.length < 3) return
 
-    this.isEditing = true
+    this.editing = true
 
     // 显示顶点标记
     this.positions.forEach((position, index) => {
@@ -375,7 +375,7 @@ export class PolygonGraphic extends BaseGraphic {
    * 停止编辑模式
    */
   stopEdit(): void {
-    this.isEditing = false
+    this.editing = false
 
     // 移除顶点标记
     this.vertexMarkers.forEach(marker => {
@@ -396,7 +396,7 @@ export class PolygonGraphic extends BaseGraphic {
     this.outlineEntity = null
     this.areaLabelEntity = null
     this.vertexMarkers = []
-    this.isCreated = false
+    // Polygon removed
   }
 
   /**

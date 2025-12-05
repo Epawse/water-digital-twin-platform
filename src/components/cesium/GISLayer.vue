@@ -26,13 +26,20 @@ const currentTool = shallowRef<DrawTool | null>(null)
 // Selection event handler
 let selectionHandler: any = null
 
-// Track Ctrl key state
+// Track Ctrl/Shift key state
 let isCtrlPressed = false
+let isShiftPressed = false
 
 // ========== Drag State ==========
 let isDragging = false
 let dragFeatureId: string | null = null
 let dragStartPosition: any = null  // Cartesian3
+
+// ========== Vertex Edit State ==========
+let editingFeatureId: string | null = null
+let isDraggingVertex = false
+let dragVertexIndex: number = -1
+let dragVertexFeatureId: string | null = null
 
 onMounted(() => {
   // Set viewer in GIS store
@@ -53,15 +60,25 @@ function setupSelectionHandler() {
   const viewer = cesiumStore.viewer
   if (!viewer) return
 
-  // Track Ctrl/Meta key state via DOM events
+  // Track Ctrl/Meta/Shift key state via DOM events
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Control' || e.key === 'Meta') {
       isCtrlPressed = true
+    }
+    if (e.key === 'Shift') {
+      isShiftPressed = true
+    }
+    // ESC to exit edit mode
+    if (e.key === 'Escape') {
+      exitEditMode()
     }
   }
   const handleKeyUp = (e: KeyboardEvent) => {
     if (e.key === 'Control' || e.key === 'Meta') {
       isCtrlPressed = false
+    }
+    if (e.key === 'Shift') {
+      isShiftPressed = false
     }
   }
   document.addEventListener('keydown', handleKeyDown)
@@ -75,7 +92,45 @@ function setupSelectionHandler() {
     document.removeEventListener('keyup', handleKeyUp)
   }
 
-  // LEFT_DOWN for drag start
+  // LEFT_DOWN for drag start (feature drag or vertex drag)
+  selectionHandler.setInputAction((event: any) => {
+    // Skip when drawing tool is active
+    if (gisStore.isDrawing || gisStore.toolType) return
+
+    const pickedObject = viewer.scene.pick(event.position)
+
+    if (Cesium.defined(pickedObject) && pickedObject.id) {
+      const entity = pickedObject.id
+
+      // Check if this is a vertex marker (has vertexIndex property)
+      const vertexIndex = getVertexIndexFromEntity(entity)
+      if (vertexIndex !== null && editingFeatureId) {
+        // Start vertex dragging
+        isDraggingVertex = true
+        dragVertexIndex = vertexIndex
+        dragVertexFeatureId = editingFeatureId
+        dragStartPosition = viewer.scene.pickPosition(event.position)
+
+        // Disable camera controls during drag
+        disableCameraControls(viewer)
+        return
+      }
+
+      const featureId = getFeatureIdFromEntity(entity)
+
+      // Only start drag if clicking on a selected feature (not in edit mode)
+      if (featureId && gisStore.selectedFeatureIds.has(featureId) && !editingFeatureId) {
+        isDragging = true
+        dragFeatureId = featureId
+        dragStartPosition = viewer.scene.pickPosition(event.position)
+
+        // Disable camera controls during drag
+        disableCameraControls(viewer)
+      }
+    }
+  }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
+
+  // LEFT_DOUBLE_CLICK for entering edit mode
   selectionHandler.setInputAction((event: any) => {
     // Skip when drawing tool is active
     if (gisStore.isDrawing || gisStore.toolType) return
@@ -85,28 +140,41 @@ function setupSelectionHandler() {
     if (Cesium.defined(pickedObject) && pickedObject.id) {
       const featureId = getFeatureIdFromEntity(pickedObject.id)
 
-      // Only start drag if clicking on a selected feature
-      if (featureId && gisStore.selectedFeatureIds.has(featureId)) {
-        isDragging = true
-        dragFeatureId = featureId
-        dragStartPosition = viewer.scene.pickPosition(event.position)
-
-        // Disable camera controls during drag
-        viewer.scene.screenSpaceCameraController.enableRotate = false
-        viewer.scene.screenSpaceCameraController.enableTranslate = false
-        viewer.scene.screenSpaceCameraController.enableZoom = false
-        viewer.scene.screenSpaceCameraController.enableTilt = false
-        viewer.scene.screenSpaceCameraController.enableLook = false
+      if (featureId && gisStore.features.has(featureId)) {
+        const feature = gisStore.features.get(featureId)
+        // Only polygon and line support vertex editing
+        if (feature && (feature.type === 'polygon' || feature.type === 'line')) {
+          enterEditMode(featureId)
+        }
       }
     }
-  }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
+  }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK)
 
-  // MOUSE_MOVE for drag
+  // MOUSE_MOVE for drag (feature drag or vertex drag)
   selectionHandler.setInputAction((event: any) => {
-    if (!isDragging || !dragFeatureId || !dragStartPosition) return
-
     const currentPosition = viewer.scene.pickPosition(event.endPosition)
     if (!Cesium.defined(currentPosition)) return
+
+    // Handle vertex dragging
+    if (isDraggingVertex && dragVertexFeatureId !== null && dragVertexIndex >= 0) {
+      const graphic = gisStore.graphics.get(dragVertexFeatureId) as any
+      if (graphic) {
+        // Update vertex position based on graphic type
+        if (graphic instanceof PolygonGraphic) {
+          graphic.updateVertex(dragVertexIndex, currentPosition)
+        } else if (graphic instanceof LineGraphic) {
+          const positions = graphic.getPositions()
+          if (positions && dragVertexIndex < positions.length) {
+            positions[dragVertexIndex] = currentPosition
+            graphic.updatePositions(positions)
+          }
+        }
+      }
+      return
+    }
+
+    // Handle feature dragging
+    if (!isDragging || !dragFeatureId || !dragStartPosition) return
 
     // Calculate offset
     const offset = Cesium.Cartesian3.subtract(
@@ -130,13 +198,26 @@ function setupSelectionHandler() {
   // LEFT_UP for drag end and selection
   selectionHandler.setInputAction((event: any) => {
     const wasDragging = isDragging
+    const wasDraggingVertex = isDraggingVertex
 
     // Re-enable camera controls
-    viewer.scene.screenSpaceCameraController.enableRotate = true
-    viewer.scene.screenSpaceCameraController.enableTranslate = true
-    viewer.scene.screenSpaceCameraController.enableZoom = true
-    viewer.scene.screenSpaceCameraController.enableTilt = true
-    viewer.scene.screenSpaceCameraController.enableLook = true
+    enableCameraControls(viewer)
+
+    // Handle vertex drag completion
+    if (wasDraggingVertex && dragVertexFeatureId) {
+      // Update feature geometry after vertex drag
+      const graphic = gisStore.graphics.get(dragVertexFeatureId)
+      if (graphic) {
+        updateFeatureGeometry(dragVertexFeatureId, graphic)
+      }
+
+      // Reset vertex drag state
+      isDraggingVertex = false
+      dragVertexIndex = -1
+      dragVertexFeatureId = null
+      dragStartPosition = null
+      return
+    }
 
     if (wasDragging) {
       // Update feature geometry in store after drag
@@ -156,16 +237,33 @@ function setupSelectionHandler() {
       return
     }
 
-    // If not dragging, handle as selection click
+    // If not dragging, handle as selection click or vertex operations
     // Skip selection when drawing tool is active
     if (gisStore.isDrawing || gisStore.toolType) return
 
     const pickedObject = viewer.scene.pick(event.position)
 
     if (Cesium.defined(pickedObject) && pickedObject.id) {
-      const featureId = getFeatureIdFromEntity(pickedObject.id)
+      const entity = pickedObject.id
+
+      // Check if clicking on a vertex marker
+      const vertexIndex = getVertexIndexFromEntity(entity)
+      if (vertexIndex !== null && editingFeatureId) {
+        // Shift+Click: Delete vertex
+        if (isShiftPressed) {
+          deleteVertex(editingFeatureId, vertexIndex)
+        }
+        return
+      }
+
+      const featureId = getFeatureIdFromEntity(entity)
 
       if (featureId && gisStore.features.has(featureId)) {
+        // If in edit mode and clicking on different feature, exit edit mode first
+        if (editingFeatureId && editingFeatureId !== featureId) {
+          exitEditMode()
+        }
+
         if (isCtrlPressed) {
           // Ctrl+Click: Toggle selection
           gisStore.toggleSelection(featureId)
@@ -178,8 +276,12 @@ function setupSelectionHandler() {
         applySelectionHighlights()
       }
     } else {
-      // Click on empty space - deselect all (unless Ctrl is held)
-      if (!isCtrlPressed) {
+      // Click on empty space
+      if (editingFeatureId) {
+        // Exit edit mode when clicking empty space
+        exitEditMode()
+      } else if (!isCtrlPressed) {
+        // Deselect all (unless Ctrl is held)
         gisStore.deselectFeature()
         applySelectionHighlights()
       }
@@ -209,6 +311,133 @@ function getFeatureIdFromEntity(entity: any): string | null {
   }
 
   return featureId
+}
+
+/**
+ * Extract vertexIndex from entity (for vertex markers)
+ */
+function getVertexIndexFromEntity(entity: any): number | null {
+  if (entity.properties && entity.properties.vertexIndex !== undefined) {
+    const prop = entity.properties.vertexIndex
+    const value = prop.getValue ? prop.getValue(Cesium.JulianDate.now()) : prop
+    return typeof value === 'number' ? value : null
+  }
+  return null
+}
+
+/**
+ * Disable camera controls (during drag)
+ */
+function disableCameraControls(viewer: any): void {
+  viewer.scene.screenSpaceCameraController.enableRotate = false
+  viewer.scene.screenSpaceCameraController.enableTranslate = false
+  viewer.scene.screenSpaceCameraController.enableZoom = false
+  viewer.scene.screenSpaceCameraController.enableTilt = false
+  viewer.scene.screenSpaceCameraController.enableLook = false
+}
+
+/**
+ * Enable camera controls (after drag)
+ */
+function enableCameraControls(viewer: any): void {
+  viewer.scene.screenSpaceCameraController.enableRotate = true
+  viewer.scene.screenSpaceCameraController.enableTranslate = true
+  viewer.scene.screenSpaceCameraController.enableZoom = true
+  viewer.scene.screenSpaceCameraController.enableTilt = true
+  viewer.scene.screenSpaceCameraController.enableLook = true
+}
+
+/**
+ * Enter edit mode for a feature
+ */
+function enterEditMode(featureId: string): void {
+  // Exit existing edit mode if any
+  if (editingFeatureId && editingFeatureId !== featureId) {
+    exitEditMode()
+  }
+
+  const graphic = gisStore.graphics.get(featureId)
+  if (!graphic) return
+
+  editingFeatureId = featureId
+  gisStore.enterEditMode(featureId)
+
+  // Start edit on graphic (shows vertex markers)
+  graphic.startEdit()
+
+  console.log('Entered edit mode for feature:', featureId)
+}
+
+/**
+ * Exit edit mode
+ */
+function exitEditMode(): void {
+  if (!editingFeatureId) return
+
+  const graphic = gisStore.graphics.get(editingFeatureId)
+  if (graphic) {
+    // Stop edit on graphic (hides vertex markers)
+    graphic.stopEdit()
+
+    // Sync geometry to store
+    updateFeatureGeometry(editingFeatureId, graphic)
+  }
+
+  gisStore.exitEditMode()
+  editingFeatureId = null
+
+  // Reset vertex drag state
+  isDraggingVertex = false
+  dragVertexIndex = -1
+  dragVertexFeatureId = null
+
+  console.log('Exited edit mode')
+}
+
+/**
+ * Delete a vertex from the editing feature
+ */
+function deleteVertex(featureId: string, vertexIndex: number): void {
+  const graphic = gisStore.graphics.get(featureId) as any
+  const feature = gisStore.features.get(featureId)
+  if (!graphic || !feature) return
+
+  try {
+    if (graphic instanceof PolygonGraphic) {
+      // Polygon needs at least 3 vertices
+      const positions = graphic.getPositions()
+      if (positions && positions.length <= 3) {
+        console.warn('Cannot delete vertex: polygon must have at least 3 vertices')
+        return
+      }
+      graphic.removeVertex(vertexIndex)
+    } else if (graphic instanceof LineGraphic) {
+      // Line needs at least 2 vertices
+      const positions = graphic.getPositions()
+      if (!positions || positions.length <= 2) {
+        console.warn('Cannot delete vertex: line must have at least 2 vertices')
+        return
+      }
+      // Remove vertex by updating positions
+      const newPositions = positions.filter((_: any, i: number) => i !== vertexIndex)
+      graphic.stopEdit() // Stop edit to hide old markers
+      graphic.updatePositions(newPositions)
+      graphic.startEdit() // Re-enter edit to show updated markers
+    }
+
+    // Update feature geometry
+    updateFeatureGeometry(featureId, graphic)
+
+    // Re-enter edit mode to refresh vertex markers
+    if (graphic instanceof PolygonGraphic) {
+      graphic.stopEdit()
+      graphic.startEdit()
+    }
+
+    console.log('Deleted vertex', vertexIndex, 'from feature', featureId)
+  } catch (error) {
+    console.error('Failed to delete vertex:', error)
+  }
 }
 
 /**

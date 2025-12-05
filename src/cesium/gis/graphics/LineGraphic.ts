@@ -147,7 +147,7 @@ export class LineGraphic extends BaseGraphic {
   /**
    * 创建长度标签
    */
-  private createLengthLabel(positions: Cesium.Cartesian3[], style: Required<GraphicStyle>): void {
+  private createLengthLabel(positions: Cesium.Cartesian3[], _style: Required<GraphicStyle>): void {
     // 标签位置：线段中点
     const midIndex = Math.floor(positions.length / 2)
     const labelPosition = positions[midIndex]
@@ -226,9 +226,9 @@ export class LineGraphic extends BaseGraphic {
   private showVertexMarkers(positions: Cesium.Cartesian3[]): void {
     const style = { ...LineGraphic.DEFAULT_STYLE, ...this.style }
 
-    positions.forEach((position, index) => {
+    positions.forEach((position, vertexIndex) => {
       const marker = this.viewer.entities.add({
-        id: `${this.id}_vertex_${index}`,
+        id: `${this.id}_vertex_${vertexIndex}`,
         position,
         point: {
           pixelSize: style.pointSize,
@@ -236,6 +236,10 @@ export class LineGraphic extends BaseGraphic {
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 2,
           disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        // Store vertex index for editing
+        properties: {
+          vertexIndex
         }
       })
       this.vertexMarkers.push(marker)

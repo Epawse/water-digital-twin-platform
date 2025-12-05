@@ -5,7 +5,7 @@
  * 使用两个对角点定义矩形范围
  */
 import * as Cesium from 'cesium'
-import { BaseGraphic, type BaseGraphicOptions, type GraphicStyle } from '../core/BaseGraphic'
+import { BaseGraphic, type BaseGraphicOptions } from '../core/BaseGraphic'
 
 /**
  * 矩形图形选项
@@ -111,7 +111,7 @@ export class RectangleGraphic extends BaseGraphic {
       this.createAreaLabel()
     }
 
-    this.isCreated = true
+    // Rectangle creation complete
   }
 
   /**
@@ -318,7 +318,7 @@ export class RectangleGraphic extends BaseGraphic {
   startEdit(): void {
     if (!this.rectangleBounds) return
 
-    this.isEditing = true
+    this.editing = true
 
     // 显示四个角的标记
     const ellipsoid = this.viewer.scene.globe.ellipsoid
@@ -337,7 +337,7 @@ export class RectangleGraphic extends BaseGraphic {
       )
     ]
 
-    corners.forEach((corner, index) => {
+    corners.forEach((corner, vertexIndex) => {
       const marker = this.viewer.entities.add({
         position: corner,
         point: {
@@ -346,6 +346,10 @@ export class RectangleGraphic extends BaseGraphic {
           outlineColor: Cesium.Color.WHITE,
           outlineWidth: 2,
           heightReference: this.heightReference
+        },
+        // Store vertex index for editing
+        properties: {
+          vertexIndex
         }
       })
       this.cornerMarkers.push(marker)
@@ -357,7 +361,7 @@ export class RectangleGraphic extends BaseGraphic {
    * 停止编辑模式
    */
   stopEdit(): void {
-    this.isEditing = false
+    this.editing = false
 
     // 移除角标记
     this.cornerMarkers.forEach(marker => {
@@ -378,7 +382,7 @@ export class RectangleGraphic extends BaseGraphic {
     this.dimensionsLabelEntity = null
     this.areaLabelEntity = null
     this.cornerMarkers = []
-    this.isCreated = false
+    // Rectangle removed
   }
 
   /**
