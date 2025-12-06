@@ -2,12 +2,12 @@
 
 ## Current Goal
 
-**Phase 0-1, 7-14 completed (~55/89 tasks = 62%)**. Properties panel is now functional.
+**Phase 0-1, 7-15 completed (~59/89 tasks = 66%)**. Snap functionality is now available.
 
 Next priority options:
 - **Phase 2-6**: Enhance drawing tools (real-time measurements)
-- **Phase 15**: Snap functionality
 - **Phase 16**: Undo/Redo
+- **Phase 17**: Integration & optimization
 
 ---
 
